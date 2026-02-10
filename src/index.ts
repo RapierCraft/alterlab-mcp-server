@@ -3,7 +3,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { AlterLabClient } from "./client.js";
-import { loadConfig } from "./config.js";
+import { loadConfig, type Config } from "./config.js";
 import { scrapeSchema, scrapeDescription, handleScrape } from "./tools/scrape.js";
 import { extractSchema, extractDescription, handleExtract } from "./tools/extract.js";
 import {
@@ -14,8 +14,7 @@ import {
 import { estimateSchema, estimateDescription, handleEstimate } from "./tools/estimate.js";
 import { balanceSchema, balanceDescription, handleBalance } from "./tools/balance.js";
 
-async function main() {
-  const config = loadConfig();
+function createServer(config: Config): McpServer {
   const client = new AlterLabClient(config);
 
   const server = new McpServer({
@@ -47,7 +46,23 @@ async function main() {
     handleBalance(client)
   );
 
-  // Connect via stdio
+  return server;
+}
+
+/**
+ * Smithery sandbox: allows registry to scan tools without real credentials.
+ */
+export function createSandboxServer(): McpServer {
+  return createServer({
+    apiKey: "sandbox-key",
+    apiUrl: "https://api.alterlab.io",
+  });
+}
+
+async function main() {
+  const config = loadConfig();
+  const server = createServer(config);
+
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
