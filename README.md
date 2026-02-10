@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://alterlab.io/logo.png" alt="AlterLab Logo" width="120" />
+  <img src="assets/logo.png" alt="AlterLab Logo" width="120" />
 </p>
 
 <h1 align="center">AlterLab MCP Server</h1>
