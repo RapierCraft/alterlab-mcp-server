@@ -1,0 +1,18 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      ALTERLAB_API_KEY:
+        type: string
+        description: "Your AlterLab API key (starts with sk_live_)"
+    required:
+      - ALTERLAB_API_KEY
+  commandFunction: |-
+    (config) => ({
+      command: "node",
+      args: ["dist/index.js"],
+      env: {
+        ALTERLAB_API_KEY: config.ALTERLAB_API_KEY,
+      },
+    })

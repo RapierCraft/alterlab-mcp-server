@@ -1,0 +1,5 @@
+src/
+tsconfig.json
+smithery.yaml
+.gitignore
+.env
