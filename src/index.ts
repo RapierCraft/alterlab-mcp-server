@@ -13,13 +13,27 @@ import {
 } from "./tools/screenshot.js";
 import { estimateSchema, estimateDescription, handleEstimate } from "./tools/estimate.js";
 import { balanceSchema, balanceDescription, handleBalance } from "./tools/balance.js";
+import {
+  listSessionsSchema,
+  listSessionsDescription,
+  handleListSessions,
+  createSessionSchema,
+  createSessionDescription,
+  handleCreateSession,
+  validateSessionSchema,
+  validateSessionDescription,
+  handleValidateSession,
+  deleteSessionSchema,
+  deleteSessionDescription,
+  handleDeleteSession,
+} from "./tools/sessions.js";
 
 function createServer(config: Config): McpServer {
   const client = new AlterLabClient(config);
 
   const server = new McpServer({
     name: "alterlab",
-    version: "1.0.0",
+    version: "1.1.0",
   });
 
   // Register tools
@@ -44,6 +58,35 @@ function createServer(config: Config): McpServer {
 
   server.tool("alterlab_check_balance", balanceDescription, balanceSchema.shape, () =>
     handleBalance(client)
+  );
+
+  // Session management tools
+  server.tool(
+    "alterlab_list_sessions",
+    listSessionsDescription,
+    listSessionsSchema.shape,
+    () => handleListSessions(client)
+  );
+
+  server.tool(
+    "alterlab_create_session",
+    createSessionDescription,
+    createSessionSchema.shape,
+    (params) => handleCreateSession(client, params as any)
+  );
+
+  server.tool(
+    "alterlab_validate_session",
+    validateSessionDescription,
+    validateSessionSchema.shape,
+    (params) => handleValidateSession(client, params as any)
+  );
+
+  server.tool(
+    "alterlab_delete_session",
+    deleteSessionDescription,
+    deleteSessionSchema.shape,
+    (params) => handleDeleteSession(client, params as any)
   );
 
   return server;

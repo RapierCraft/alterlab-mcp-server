@@ -33,6 +33,53 @@ export interface UnifiedScrapeRequest {
   wait_for?: string;
   screenshot?: boolean;
   wait_until?: string;
+  session_id?: string;
+  cookies?: Record<string, string>;
+}
+
+// ============================================================================
+// Session Types
+// ============================================================================
+
+export interface Session {
+  id: string;
+  name: string;
+  domain: string;
+  status: "active" | "expired" | "invalid";
+  created_at: string;
+  updated_at: string;
+  last_used_at?: string;
+  expires_at?: string;
+  cookie_count: number;
+}
+
+export interface SessionListResponse {
+  sessions: Session[];
+  total: number;
+}
+
+export interface SessionCreateRequest {
+  name: string;
+  domain: string;
+  cookies: Record<string, string>;
+  user_agent?: string;
+}
+
+export interface SessionCreateResponse {
+  id: string;
+  name: string;
+  domain: string;
+  status: "active";
+  created_at: string;
+}
+
+export interface SessionValidateResponse {
+  id: string;
+  name: string;
+  domain: string;
+  status: "active" | "expired" | "invalid";
+  valid: boolean;
+  reason?: string;
 }
 
 // ============================================================================
