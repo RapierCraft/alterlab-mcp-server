@@ -3,13 +3,18 @@ import { type ApiError } from "./errors.js";
 import {
   type BalanceResponse,
   type CostEstimate,
+  type Session,
+  type SessionCreateRequest,
+  type SessionCreateResponse,
+  type SessionListResponse,
+  type SessionValidateResponse,
   type UnifiedScrapeRequest,
   type UnifiedScrapeResponse,
 } from "./types.js";
 
 // Read version from package.json at build time is complex with ESM,
 // so we hardcode it and keep in sync with package.json.
-const VERSION = "1.0.0";
+const VERSION = "1.1.0";
 const MAX_RETRIES = 2;
 
 export class AlterLabClient {
@@ -95,6 +100,34 @@ export class AlterLabClient {
 
   async getBalance(): Promise<BalanceResponse> {
     return this.request<BalanceResponse>("GET", "/api/v1/billing/balance");
+  }
+
+  async listSessions(): Promise<SessionListResponse> {
+    return this.request<SessionListResponse>("GET", "/api/v1/sessions/");
+  }
+
+  async createSession(
+    params: SessionCreateRequest
+  ): Promise<SessionCreateResponse> {
+    return this.request<SessionCreateResponse>(
+      "POST",
+      "/api/v1/sessions/",
+      params
+    );
+  }
+
+  async validateSession(sessionId: string): Promise<SessionValidateResponse> {
+    return this.request<SessionValidateResponse>(
+      "POST",
+      `/api/v1/sessions/${sessionId}/validate`
+    );
+  }
+
+  async deleteSession(sessionId: string): Promise<{ deleted: boolean }> {
+    return this.request<{ deleted: boolean }>(
+      "DELETE",
+      `/api/v1/sessions/${sessionId}`
+    );
   }
 
   async fetchScreenshotAsBase64(screenshotUrl: string): Promise<string> {

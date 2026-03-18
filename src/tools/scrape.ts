@@ -40,6 +40,23 @@ export const scrapeSchema = z.object({
     .boolean()
     .default(false)
     .describe("Include raw HTML in the response alongside formatted content"),
+  session_id: z
+    .string()
+    .uuid()
+    .optional()
+    .describe(
+      "UUID of a stored session for authenticated scraping. " +
+      "Use alterlab_list_sessions to find available sessions. " +
+      "The session's cookies will be injected into the request."
+    ),
+  cookies: z
+    .record(z.string(), z.string())
+    .optional()
+    .describe(
+      "Inline cookies as key-value pairs for authenticated scraping " +
+      "(e.g., {\"session_token\": \"abc123\"}). " +
+      "Use this for one-off requests; use session_id for reusable sessions."
+    ),
 });
 
 export const scrapeDescription =
@@ -47,7 +64,8 @@ export const scrapeDescription =
   "Automatically handles anti-bot protection with tier escalation. " +
   "Returns markdown by default — optimized for LLM context. " +
   "Use render_js=true for JavaScript-heavy sites (React, Angular, SPAs). " +
-  "Use use_proxy=true for geo-restricted or heavily protected sites.";
+  "Use use_proxy=true for geo-restricted or heavily protected sites. " +
+  "Supports authenticated scraping via session_id (stored session) or inline cookies.";
 
 export async function handleScrape(
   client: AlterLabClient,
@@ -62,6 +80,8 @@ export async function handleScrape(
       timeout: params.timeout,
       include_raw_html: params.include_raw_html,
       wait_for: params.wait_for,
+      session_id: params.session_id,
+      cookies: params.cookies,
       advanced: {
         render_js: params.render_js,
         use_proxy: params.use_proxy,

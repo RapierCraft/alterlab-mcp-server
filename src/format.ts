@@ -3,6 +3,9 @@ import {
   TIER_PRICES,
   type BalanceResponse,
   type CostEstimate,
+  type SessionCreateResponse,
+  type SessionListResponse,
+  type SessionValidateResponse,
   type UnifiedScrapeResponse,
 } from "./types.js";
 
@@ -142,4 +145,92 @@ export function formatBalanceResponse(balance: BalanceResponse): string {
     `- Total spent: $${spent}\n\n` +
     `Add funds: https://alterlab.io/dashboard/billing`
   );
+}
+
+/**
+ * Format a session list response as readable text.
+ */
+export function formatSessionListResponse(
+  response: SessionListResponse
+): string {
+  if (response.sessions.length === 0) {
+    return (
+      "**No sessions found.**\n\n" +
+      "Create a session with `alterlab_create_session` to enable authenticated scraping.\n" +
+      "You'll need cookies from a logged-in browser session for the target domain."
+    );
+  }
+
+  const parts: string[] = [
+    `**Stored Sessions** (${response.total} total)\n`,
+  ];
+
+  for (const session of response.sessions) {
+    const status =
+      session.status === "active"
+        ? "Active"
+        : session.status === "expired"
+          ? "Expired"
+          : "Invalid";
+    const lastUsed = session.last_used_at
+      ? `Last used: ${session.last_used_at}`
+      : "Never used";
+
+    parts.push(
+      `- **${session.name}** (\`${session.id}\`)\n` +
+        `  Domain: ${session.domain} | Status: ${status} | ` +
+        `Cookies: ${session.cookie_count} | ${lastUsed}`
+    );
+  }
+
+  parts.push(
+    "\nUse a session_id with `alterlab_scrape` to scrape authenticated pages."
+  );
+
+  return parts.join("\n");
+}
+
+/**
+ * Format a session create response.
+ */
+export function formatSessionCreateResponse(
+  response: SessionCreateResponse
+): string {
+  return (
+    `**Session Created**\n\n` +
+    `- Name: **${response.name}**\n` +
+    `- ID: \`${response.id}\`\n` +
+    `- Domain: ${response.domain}\n` +
+    `- Status: ${response.status}\n\n` +
+    `Use this session_id with \`alterlab_scrape\` to scrape authenticated pages on ${response.domain}.`
+  );
+}
+
+/**
+ * Format a session validation response.
+ */
+export function formatSessionValidateResponse(
+  response: SessionValidateResponse
+): string {
+  const statusIcon = response.valid ? "Valid" : "Invalid";
+  const parts = [
+    `**Session Validation: ${statusIcon}**\n`,
+    `- Name: **${response.name}**`,
+    `- ID: \`${response.id}\``,
+    `- Domain: ${response.domain}`,
+    `- Status: ${response.status}`,
+  ];
+
+  if (response.reason) {
+    parts.push(`- Reason: ${response.reason}`);
+  }
+
+  if (!response.valid) {
+    parts.push(
+      "\nThis session can no longer be used for authenticated scraping. " +
+        "Create a new session with fresh cookies using `alterlab_create_session`."
+    );
+  }
+
+  return parts.join("\n");
 }

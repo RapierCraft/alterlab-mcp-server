@@ -167,6 +167,8 @@ Scrape a URL and return its content as markdown, text, HTML, or JSON. Automatica
 | `wait_for` | string | &mdash; | CSS selector to wait for before extraction |
 | `timeout` | number | `90` | Timeout in seconds (1-300) |
 | `include_raw_html` | boolean | `false` | Include raw HTML alongside formatted content |
+| `session_id` | string (UUID) | &mdash; | Stored session ID for authenticated scraping |
+| `cookies` | `Record<string, string>` | &mdash; | Inline cookies for one-off authenticated requests |
 
 ### `alterlab_extract` &mdash; Extract Structured Data
 
@@ -230,6 +232,80 @@ Check your account balance, total deposited, and total spent. No parameters need
 ```
 "Check my AlterLab balance"
 ```
+
+### `alterlab_list_sessions` &mdash; List Stored Sessions
+
+List all stored sessions for authenticated scraping. Sessions contain cookies for specific domains, allowing you to scrape content behind login walls.
+
+```
+"List my stored sessions"
+```
+
+### `alterlab_create_session` &mdash; Create a Session
+
+Create a new stored session with cookies from a logged-in browser. The session is stored securely and can be reused across multiple scrape requests.
+
+```
+"Create an Amazon session with these cookies: session-id=abc123, session-token=xyz789"
+```
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `name` | string | required | Human-readable name (e.g., "My Amazon Account") |
+| `domain` | string | required | Domain (e.g., "amazon.com") |
+| `cookies` | `Record<string, string>` | required | Cookie key-value pairs |
+| `user_agent` | string | &mdash; | Browser User-Agent to use with this session |
+
+### `alterlab_validate_session` &mdash; Validate a Session
+
+Check whether a stored session is still active and its cookies are valid.
+
+```
+"Is my Amazon session still valid?"
+```
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `session_id` | string (UUID) | required | Session ID to validate |
+
+### `alterlab_delete_session` &mdash; Delete a Session
+
+Permanently delete a stored session and its cookies.
+
+```
+"Delete session abc-123-def"
+```
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `session_id` | string (UUID) | required | Session ID to delete |
+
+---
+
+## Authenticated Scraping
+
+AlterLab MCP supports scraping pages that require authentication. This enables AI agents to access user-specific content like order histories, account dashboards, and member-only pricing.
+
+### How It Works
+
+1. **Create a session** with cookies from a logged-in browser using `alterlab_create_session`
+2. **Scrape authenticated pages** by passing the `session_id` to `alterlab_scrape`
+3. **Manage sessions** with list, validate, and delete tools
+
+### Example: Check Amazon Prime Pricing
+
+```
+User: "What's my Prime member price for this product?"
+
+Claude: [calls alterlab_list_sessions → finds Amazon session]
+Claude: [calls alterlab_scrape with session_id for authenticated pricing]
+Claude: "The Prime member price is $24.99 (public price: $34.99)"
+```
+
+### Inline Cookies vs Stored Sessions
+
+- **Stored sessions** (`session_id`): Best for repeated access to the same domain. Create once, reuse across requests.
+- **Inline cookies** (`cookies`): Best for one-off authenticated requests where you don't need to save the session.
 
 ---
 
