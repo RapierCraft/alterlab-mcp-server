@@ -1,0 +1,15 @@
+name: Auto-Add to Ecosystem Project
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  add-to-project:
+    name: Add to Ecosystem Board
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/add-to-project@v1.0.2
+        with:
+          project-url: https://github.com/users/RapierCraft/projects/1
+          github-token: ${{ secrets.ECOSYSTEM_PAT }}
