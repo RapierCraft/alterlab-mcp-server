@@ -82,6 +82,39 @@ export interface SessionValidateResponse {
   reason?: string;
 }
 
+export interface SessionDetailResponse {
+  id: string;
+  name: string;
+  domain: string;
+  cookie_names: string[];
+  header_names?: string[];
+  status: string;
+  expires_at?: string;
+  last_validated_at?: string;
+  consecutive_failures: number;
+  last_used_at?: string;
+  total_requests: number;
+  successful_requests: number;
+  success_rate: number;
+  notes?: string;
+  expiry_status?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SessionUpdateRequest {
+  name?: string;
+  cookies?: Record<string, string>;
+  headers?: Record<string, string>;
+  expires_at?: string;
+  notes?: string;
+}
+
+export interface SessionRefreshRequest {
+  cookies?: Record<string, string>;
+  headers?: Record<string, string>;
+}
+
 // ============================================================================
 // API Response Types
 // ============================================================================

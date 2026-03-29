@@ -4,6 +4,7 @@ import {
   type BalanceResponse,
   type CostEstimate,
   type SessionCreateResponse,
+  type SessionDetailResponse,
   type SessionListResponse,
   type SessionValidateResponse,
   type UnifiedScrapeResponse,
@@ -37,7 +38,7 @@ export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
           (typeof contentMap.json === "string"
             ? contentMap.json
             : JSON.stringify(contentMap.json, null, 2)) +
-          "\n```"
+          "\n```",
       );
     } else {
       // Unknown structure — dump as JSON
@@ -61,7 +62,7 @@ export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
       `Tier: ${tierName} (${tierPrice}/req) | ` +
       `Cost: ${cost} | ` +
       `Time: ${response.response_time_ms}ms` +
-      (response.cached ? " | Cached" : "")
+      (response.cached ? " | Cached" : ""),
   );
 
   if (response.billing.optimization_suggestion) {
@@ -82,7 +83,10 @@ export function formatExtractResponse(response: UnifiedScrapeResponse): string {
 
   if (response.filtered_content) {
     jsonData = response.filtered_content;
-  } else if (typeof response.content === "object" && response.content !== null) {
+  } else if (
+    typeof response.content === "object" &&
+    response.content !== null
+  ) {
     const contentMap = response.content as Record<string, unknown>;
     jsonData = contentMap.json || contentMap;
   } else {
@@ -95,8 +99,10 @@ export function formatExtractResponse(response: UnifiedScrapeResponse): string {
 
   parts.push(
     "```json\n" +
-      (typeof jsonData === "string" ? jsonData : JSON.stringify(jsonData, null, 2)) +
-      "\n```"
+      (typeof jsonData === "string"
+        ? jsonData
+        : JSON.stringify(jsonData, null, 2)) +
+      "\n```",
   );
 
   // Metadata
@@ -108,7 +114,7 @@ export function formatExtractResponse(response: UnifiedScrapeResponse): string {
       `Source: ${response.url} | ` +
       `Tier: ${tierName} | ` +
       `Method: ${response.extraction_method || "algorithmic"} | ` +
-      `Time: ${response.response_time_ms}ms`
+      `Time: ${response.response_time_ms}ms`,
   );
 
   return parts.join("\n");
@@ -118,7 +124,8 @@ export function formatExtractResponse(response: UnifiedScrapeResponse): string {
  * Format a cost estimate as readable text.
  */
 export function formatEstimateResponse(estimate: CostEstimate): string {
-  const tierName = TIER_NAMES[estimate.estimated_tier] || estimate.estimated_tier;
+  const tierName =
+    TIER_NAMES[estimate.estimated_tier] || estimate.estimated_tier;
   const tierPrice = TIER_PRICES[estimate.estimated_tier] || "unknown";
 
   return (
@@ -151,7 +158,7 @@ export function formatBalanceResponse(balance: BalanceResponse): string {
  * Format a session list response as readable text.
  */
 export function formatSessionListResponse(
-  response: SessionListResponse
+  response: SessionListResponse,
 ): string {
   if (response.sessions.length === 0) {
     return (
@@ -161,9 +168,7 @@ export function formatSessionListResponse(
     );
   }
 
-  const parts: string[] = [
-    `**Stored Sessions** (${response.total} total)\n`,
-  ];
+  const parts: string[] = [`**Stored Sessions** (${response.total} total)\n`];
 
   for (const session of response.sessions) {
     const status =
@@ -179,12 +184,12 @@ export function formatSessionListResponse(
     parts.push(
       `- **${session.name}** (\`${session.id}\`)\n` +
         `  Domain: ${session.domain} | Status: ${status} | ` +
-        `Cookies: ${session.cookie_count} | ${lastUsed}`
+        `Cookies: ${session.cookie_count} | ${lastUsed}`,
     );
   }
 
   parts.push(
-    "\nUse a session_id with `alterlab_scrape` to scrape authenticated pages."
+    "\nUse a session_id with `alterlab_scrape` to scrape authenticated pages.",
   );
 
   return parts.join("\n");
@@ -194,7 +199,7 @@ export function formatSessionListResponse(
  * Format a session create response.
  */
 export function formatSessionCreateResponse(
-  response: SessionCreateResponse
+  response: SessionCreateResponse,
 ): string {
   return (
     `**Session Created**\n\n` +
@@ -210,7 +215,7 @@ export function formatSessionCreateResponse(
  * Format a session validation response.
  */
 export function formatSessionValidateResponse(
-  response: SessionValidateResponse
+  response: SessionValidateResponse,
 ): string {
   const statusIcon = response.valid ? "Valid" : "Invalid";
   const parts = [
@@ -228,9 +233,95 @@ export function formatSessionValidateResponse(
   if (!response.valid) {
     parts.push(
       "\nThis session can no longer be used for authenticated scraping. " +
-        "Create a new session with fresh cookies using `alterlab_create_session`."
+        "Create a new session with fresh cookies using `alterlab_create_session`.",
     );
   }
 
   return parts.join("\n");
+}
+
+/**
+ * Format a session detail response (get session).
+ */
+export function formatSessionDetailResponse(
+  response: SessionDetailResponse,
+): string {
+  const parts = [
+    `**Session: ${response.name}**\n`,
+    `- ID: \`${response.id}\``,
+    `- Domain: ${response.domain}`,
+    `- Status: ${response.status}`,
+    `- Cookies: ${response.cookie_names.length} (${response.cookie_names.join(", ")})`,
+  ];
+
+  if (response.header_names && response.header_names.length > 0) {
+    parts.push(
+      `- Custom headers: ${response.header_names.length} (${response.header_names.join(", ")})`,
+    );
+  }
+
+  if (response.expires_at) {
+    const expiryLabel = response.expiry_status
+      ? ` (${response.expiry_status})`
+      : "";
+    parts.push(`- Expires: ${response.expires_at}${expiryLabel}`);
+  }
+
+  parts.push(
+    `\n**Usage Stats**`,
+    `- Total requests: ${response.total_requests}`,
+    `- Successful: ${response.successful_requests}`,
+    `- Success rate: ${(response.success_rate * 100).toFixed(1)}%`,
+    `- Consecutive failures: ${response.consecutive_failures}`,
+  );
+
+  if (response.last_used_at) {
+    parts.push(`- Last used: ${response.last_used_at}`);
+  }
+  if (response.last_validated_at) {
+    parts.push(`- Last validated: ${response.last_validated_at}`);
+  }
+  if (response.notes) {
+    parts.push(`\n**Notes**: ${response.notes}`);
+  }
+
+  parts.push(`\n- Created: ${response.created_at}`);
+  parts.push(`- Updated: ${response.updated_at}`);
+
+  return parts.join("\n");
+}
+
+/**
+ * Format a session update response.
+ */
+export function formatSessionUpdateResponse(
+  response: SessionDetailResponse,
+): string {
+  return (
+    `**Session Updated**\n\n` +
+    `- Name: **${response.name}**\n` +
+    `- ID: \`${response.id}\`\n` +
+    `- Domain: ${response.domain}\n` +
+    `- Status: ${response.status}\n` +
+    `- Cookies: ${response.cookie_names.length}\n\n` +
+    `Session has been updated successfully.`
+  );
+}
+
+/**
+ * Format a session refresh response.
+ */
+export function formatSessionRefreshResponse(
+  response: SessionDetailResponse,
+): string {
+  return (
+    `**Session Cookies Refreshed**\n\n` +
+    `- Name: **${response.name}**\n` +
+    `- ID: \`${response.id}\`\n` +
+    `- Domain: ${response.domain}\n` +
+    `- Status: ${response.status}\n` +
+    `- Cookies: ${response.cookie_names.length}\n\n` +
+    `Cookies have been rotated and failure counters reset. ` +
+    `The session is ready for authenticated scraping.`
+  );
 }
