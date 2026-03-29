@@ -24,6 +24,10 @@
   ],
   "author": "AlterLab",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RapierCraftStudios/alterlab-mcp-server.git"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
     "zod": "^3.24.2"
