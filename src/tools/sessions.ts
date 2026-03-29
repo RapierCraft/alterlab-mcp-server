@@ -2,7 +2,14 @@ import { z } from "zod";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { AlterLabClient } from "../client.js";
 import { type ApiError, formatErrorResult } from "../errors.js";
-import { formatSessionListResponse, formatSessionCreateResponse, formatSessionValidateResponse } from "../format.js";
+import {
+  formatSessionListResponse,
+  formatSessionCreateResponse,
+  formatSessionDetailResponse,
+  formatSessionUpdateResponse,
+  formatSessionRefreshResponse,
+  formatSessionValidateResponse,
+} from "../format.js";
 
 // ============================================================================
 // List Sessions
@@ -17,7 +24,7 @@ export const listSessionsDescription =
   "Use the returned session_id with alterlab_scrape to scrape authenticated pages.";
 
 export async function handleListSessions(
-  client: AlterLabClient
+  client: AlterLabClient,
 ): Promise<CallToolResult> {
   try {
     const response = await client.listSessions();
@@ -41,7 +48,9 @@ export const createSessionSchema = z.object({
     .string()
     .min(1)
     .max(100)
-    .describe("Human-readable name for this session (e.g., 'My Amazon Account')"),
+    .describe(
+      "Human-readable name for this session (e.g., 'My Amazon Account')",
+    ),
   domain: z
     .string()
     .min(1)
@@ -50,7 +59,7 @@ export const createSessionSchema = z.object({
     .record(z.string(), z.string())
     .describe(
       "Cookie key-value pairs for authentication " +
-      "(e.g., {\"session-id\": \"abc123\", \"session-token\": \"xyz789\"})"
+        '(e.g., {"session-id": "abc123", "session-token": "xyz789"})',
     ),
   user_agent: z
     .string()
@@ -66,7 +75,7 @@ export const createSessionDescription =
 
 export async function handleCreateSession(
   client: AlterLabClient,
-  params: z.infer<typeof createSessionSchema>
+  params: z.infer<typeof createSessionSchema>,
 ): Promise<CallToolResult> {
   try {
     const response = await client.createSession({
@@ -91,10 +100,7 @@ export async function handleCreateSession(
 // ============================================================================
 
 export const validateSessionSchema = z.object({
-  session_id: z
-    .string()
-    .uuid()
-    .describe("UUID of the session to validate"),
+  session_id: z.string().uuid().describe("UUID of the session to validate"),
 });
 
 export const validateSessionDescription =
@@ -104,7 +110,7 @@ export const validateSessionDescription =
 
 export async function handleValidateSession(
   client: AlterLabClient,
-  params: z.infer<typeof validateSessionSchema>
+  params: z.infer<typeof validateSessionSchema>,
 ): Promise<CallToolResult> {
   try {
     const response = await client.validateSession(params.session_id);
@@ -122,14 +128,145 @@ export async function handleValidateSession(
 }
 
 // ============================================================================
+// Get Session
+// ============================================================================
+
+export const getSessionSchema = z.object({
+  session_id: z.string().uuid().describe("UUID of the session to retrieve"),
+});
+
+export const getSessionDescription =
+  "Get detailed information about a specific stored session. " +
+  "Returns session status, cookie names, usage statistics (total requests, " +
+  "success rate), expiry info, and notes. Use this to inspect a session " +
+  "before deciding to validate, refresh, or delete it.";
+
+export async function handleGetSession(
+  client: AlterLabClient,
+  params: z.infer<typeof getSessionSchema>,
+): Promise<CallToolResult> {
+  try {
+    const response = await client.getSession(params.session_id);
+    return {
+      content: [{ type: "text", text: formatSessionDetailResponse(response) }],
+    };
+  } catch (error) {
+    if (isApiError(error)) {
+      return formatErrorResult(error);
+    }
+    return formatErrorResult(error as Error);
+  }
+}
+
+// ============================================================================
+// Update Session
+// ============================================================================
+
+export const updateSessionSchema = z.object({
+  session_id: z.string().uuid().describe("UUID of the session to update"),
+  name: z
+    .string()
+    .min(1)
+    .max(100)
+    .optional()
+    .describe("New name for the session"),
+  cookies: z
+    .record(z.string(), z.string())
+    .optional()
+    .describe(
+      "New cookie key-value pairs — replaces ALL existing cookies " +
+        '(e.g., {"session-id": "new123", "session-token": "newxyz"})',
+    ),
+  headers: z
+    .record(z.string(), z.string())
+    .optional()
+    .describe("New custom headers — replaces ALL existing headers"),
+  expires_at: z
+    .string()
+    .optional()
+    .describe(
+      "New expiration date in ISO 8601 format (e.g., '2026-12-31T23:59:59Z')",
+    ),
+  notes: z
+    .string()
+    .max(1000)
+    .optional()
+    .describe("Notes or description for this session"),
+});
+
+export const updateSessionDescription =
+  "Update a stored session's properties. You can change the name, rotate " +
+  "cookies, update custom headers, set a new expiration, or add notes. " +
+  "When cookies are provided, they replace ALL existing cookies (not merged). " +
+  "Use this instead of delete+recreate when you need to rotate credentials.";
+
+export async function handleUpdateSession(
+  client: AlterLabClient,
+  params: z.infer<typeof updateSessionSchema>,
+): Promise<CallToolResult> {
+  try {
+    const { session_id, ...updateFields } = params;
+    const response = await client.updateSession(session_id, updateFields);
+    return {
+      content: [{ type: "text", text: formatSessionUpdateResponse(response) }],
+    };
+  } catch (error) {
+    if (isApiError(error)) {
+      return formatErrorResult(error);
+    }
+    return formatErrorResult(error as Error);
+  }
+}
+
+// ============================================================================
+// Refresh Session
+// ============================================================================
+
+export const refreshSessionSchema = z.object({
+  session_id: z.string().uuid().describe("UUID of the session to refresh"),
+  cookies: z
+    .record(z.string(), z.string())
+    .optional()
+    .describe(
+      "New cookie key-value pairs to replace the old ones. " +
+        "If omitted, only failure counters are reset.",
+    ),
+  headers: z
+    .record(z.string(), z.string())
+    .optional()
+    .describe("Updated custom headers to include with the session"),
+});
+
+export const refreshSessionDescription =
+  "Refresh a session by rotating its cookies and resetting failure counters. " +
+  "This is the preferred way to update cookies after re-authenticating in " +
+  "your browser. The session status is reset to active. If cookies are " +
+  "omitted, only the failure counters are reset.";
+
+export async function handleRefreshSession(
+  client: AlterLabClient,
+  params: z.infer<typeof refreshSessionSchema>,
+): Promise<CallToolResult> {
+  try {
+    const { session_id, ...refreshFields } = params;
+    const response = await client.refreshSession(session_id, refreshFields);
+    return {
+      content: [{ type: "text", text: formatSessionRefreshResponse(response) }],
+    };
+  } catch (error) {
+    if (isApiError(error)) {
+      return formatErrorResult(error);
+    }
+    return formatErrorResult(error as Error);
+  }
+}
+
+// ============================================================================
 // Delete Session
 // ============================================================================
 
 export const deleteSessionSchema = z.object({
-  session_id: z
-    .string()
-    .uuid()
-    .describe("UUID of the session to delete"),
+  session_id: z.string().uuid().describe("UUID of the session to delete"),
 });
 
 export const deleteSessionDescription =
@@ -138,7 +275,7 @@ export const deleteSessionDescription =
 
 export async function handleDeleteSession(
   client: AlterLabClient,
-  params: z.infer<typeof deleteSessionSchema>
+  params: z.infer<typeof deleteSessionSchema>,
 ): Promise<CallToolResult> {
   try {
     await client.deleteSession(params.session_id);

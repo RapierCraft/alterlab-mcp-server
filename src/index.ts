@@ -4,15 +4,31 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { AlterLabClient } from "./client.js";
 import { loadConfig, type Config } from "./config.js";
-import { scrapeSchema, scrapeDescription, handleScrape } from "./tools/scrape.js";
-import { extractSchema, extractDescription, handleExtract } from "./tools/extract.js";
+import {
+  scrapeSchema,
+  scrapeDescription,
+  handleScrape,
+} from "./tools/scrape.js";
+import {
+  extractSchema,
+  extractDescription,
+  handleExtract,
+} from "./tools/extract.js";
 import {
   screenshotSchema,
   screenshotDescription,
   handleScreenshot,
 } from "./tools/screenshot.js";
-import { estimateSchema, estimateDescription, handleEstimate } from "./tools/estimate.js";
-import { balanceSchema, balanceDescription, handleBalance } from "./tools/balance.js";
+import {
+  estimateSchema,
+  estimateDescription,
+  handleEstimate,
+} from "./tools/estimate.js";
+import {
+  balanceSchema,
+  balanceDescription,
+  handleBalance,
+} from "./tools/balance.js";
 import {
   listSessionsSchema,
   listSessionsDescription,
@@ -20,6 +36,15 @@ import {
   createSessionSchema,
   createSessionDescription,
   handleCreateSession,
+  getSessionSchema,
+  getSessionDescription,
+  handleGetSession,
+  updateSessionSchema,
+  updateSessionDescription,
+  handleUpdateSession,
+  refreshSessionSchema,
+  refreshSessionDescription,
+  handleRefreshSession,
   validateSessionSchema,
   validateSessionDescription,
   handleValidateSession,
@@ -37,27 +62,39 @@ function createServer(config: Config): McpServer {
   });
 
   // Register tools
-  server.tool("alterlab_scrape", scrapeDescription, scrapeSchema.shape, (params) =>
-    handleScrape(client, params as any)
+  server.tool(
+    "alterlab_scrape",
+    scrapeDescription,
+    scrapeSchema.shape,
+    (params) => handleScrape(client, params as any),
   );
 
-  server.tool("alterlab_extract", extractDescription, extractSchema.shape, (params) =>
-    handleExtract(client, params as any)
+  server.tool(
+    "alterlab_extract",
+    extractDescription,
+    extractSchema.shape,
+    (params) => handleExtract(client, params as any),
   );
 
   server.tool(
     "alterlab_screenshot",
     screenshotDescription,
     screenshotSchema.shape,
-    (params) => handleScreenshot(client, params as any)
+    (params) => handleScreenshot(client, params as any),
   );
 
-  server.tool("alterlab_estimate_cost", estimateDescription, estimateSchema.shape, (params) =>
-    handleEstimate(client, params as any)
+  server.tool(
+    "alterlab_estimate_cost",
+    estimateDescription,
+    estimateSchema.shape,
+    (params) => handleEstimate(client, params as any),
   );
 
-  server.tool("alterlab_check_balance", balanceDescription, balanceSchema.shape, () =>
-    handleBalance(client)
+  server.tool(
+    "alterlab_check_balance",
+    balanceDescription,
+    balanceSchema.shape,
+    () => handleBalance(client),
   );
 
   // Session management tools
@@ -65,28 +102,49 @@ function createServer(config: Config): McpServer {
     "alterlab_list_sessions",
     listSessionsDescription,
     listSessionsSchema.shape,
-    () => handleListSessions(client)
+    () => handleListSessions(client),
   );
 
   server.tool(
     "alterlab_create_session",
     createSessionDescription,
     createSessionSchema.shape,
-    (params) => handleCreateSession(client, params as any)
+    (params) => handleCreateSession(client, params as any),
+  );
+
+  server.tool(
+    "alterlab_get_session",
+    getSessionDescription,
+    getSessionSchema.shape,
+    (params) => handleGetSession(client, params as any),
+  );
+
+  server.tool(
+    "alterlab_update_session",
+    updateSessionDescription,
+    updateSessionSchema.shape,
+    (params) => handleUpdateSession(client, params as any),
+  );
+
+  server.tool(
+    "alterlab_refresh_session",
+    refreshSessionDescription,
+    refreshSessionSchema.shape,
+    (params) => handleRefreshSession(client, params as any),
   );
 
   server.tool(
     "alterlab_validate_session",
     validateSessionDescription,
     validateSessionSchema.shape,
-    (params) => handleValidateSession(client, params as any)
+    (params) => handleValidateSession(client, params as any),
   );
 
   server.tool(
     "alterlab_delete_session",
     deleteSessionDescription,
     deleteSessionSchema.shape,
-    (params) => handleDeleteSession(client, params as any)
+    (params) => handleDeleteSession(client, params as any),
   );
 
   return server;
