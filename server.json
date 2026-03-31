@@ -1,7 +1,7 @@
 {
   "$schema": "https://registry.modelcontextprotocol.io/schemas/server.json",
   "name": "io.alterlab/mcp-server",
-  "description": "Web scraping and structured data extraction MCP server. Scrape any website with automatic anti-bot bypass (Cloudflare, DataDome, Akamai), extract structured JSON with AI, take screenshots, and manage authenticated sessions. Works with Claude, Cursor, Windsurf, Cline, and any MCP-compatible AI agent.",
+  "description": "Web scraping MCP server — scrape, extract structured data, screenshot any site with anti-bot bypass.",
   "repository": {
     "url": "https://github.com/RapierCraft/alterlab-mcp-server",
     "source": "github"
@@ -13,8 +13,8 @@
   },
   "packages": [
     {
-      "registry_type": "npm",
-      "name": "alterlab-mcp-server",
+      "registryType": "npm",
+      "identifier": "alterlab-mcp-server",
       "version": "1.1.1",
       "runtime": "node",
       "runtime_arguments": [],
