@@ -1,0 +1,89 @@
+{
+  "$schema": "https://registry.modelcontextprotocol.io/schemas/server.json",
+  "name": "io.alterlab/mcp-server",
+  "description": "Web scraping and structured data extraction MCP server. Scrape any website with automatic anti-bot bypass (Cloudflare, DataDome, Akamai), extract structured JSON with AI, take screenshots, and manage authenticated sessions. Works with Claude, Cursor, Windsurf, Cline, and any MCP-compatible AI agent.",
+  "repository": {
+    "url": "https://github.com/RapierCraft/alterlab-mcp-server",
+    "source": "github"
+  },
+  "version_detail": {
+    "version": "1.1.0",
+    "release_date": "2026-03-31",
+    "is_latest": true
+  },
+  "packages": [
+    {
+      "registry_type": "npm",
+      "name": "alterlab-mcp-server",
+      "version": "1.1.0",
+      "runtime": "node",
+      "runtime_arguments": [],
+      "package_arguments": [],
+      "environment_variables": [
+        {
+          "name": "ALTERLAB_API_KEY",
+          "description": "Your AlterLab API key (starts with sk_live_). Get one at https://alterlab.io",
+          "required": true,
+          "is_secret": true
+        },
+        {
+          "name": "ALTERLAB_API_URL",
+          "description": "API base URL (defaults to https://api.alterlab.io)",
+          "required": false,
+          "is_secret": false
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "alterlab_scrape",
+      "description": "Scrape any website with anti-bot bypass and proxy rotation. Returns clean text, HTML, markdown, or JSON."
+    },
+    {
+      "name": "alterlab_extract",
+      "description": "Extract structured data from any URL using AI. Define a schema and get back typed JSON."
+    },
+    {
+      "name": "alterlab_screenshot",
+      "description": "Take a screenshot of any webpage with configurable viewport and format."
+    },
+    {
+      "name": "alterlab_estimate_cost",
+      "description": "Estimate the credit cost of a scrape before running it."
+    },
+    {
+      "name": "alterlab_check_balance",
+      "description": "Check your current account balance and credit usage."
+    },
+    {
+      "name": "alterlab_list_sessions",
+      "description": "List all active authenticated browser sessions."
+    },
+    {
+      "name": "alterlab_create_session",
+      "description": "Create a new authenticated browser session with cookies for logged-in scraping."
+    },
+    {
+      "name": "alterlab_get_session",
+      "description": "Get details of a specific authenticated session."
+    },
+    {
+      "name": "alterlab_update_session",
+      "description": "Update cookies or settings on an existing session."
+    },
+    {
+      "name": "alterlab_refresh_session",
+      "description": "Refresh an authenticated session to extend its lifetime."
+    },
+    {
+      "name": "alterlab_validate_session",
+      "description": "Validate that a session's cookies are still active and working."
+    },
+    {
+      "name": "alterlab_delete_session",
+      "description": "Delete an authenticated browser session."
+    }
+  ],
+  "remotes": []
+}

@@ -439,6 +439,33 @@ The MCP server returns helpful error messages with suggested next actions:
 
 ---
 
+## Agentic Workflows — AI Agents That Scrape the Web
+
+AlterLab MCP turns any AI agent into a web-capable agent. Instead of relying on stale training data, your agent can fetch live information from any website during execution.
+
+### Use Cases for AI Agents
+
+- **Research agents** — scrape multiple sources, cross-reference facts, generate reports with citations
+- **Data pipeline agents** — extract structured product/pricing/job data on a schedule
+- **Competitive intelligence** — monitor competitor pages, track pricing changes, detect new features
+- **Content generation** — scrape real data to ground LLM output in facts, not hallucinations
+- **Lead enrichment** — scrape company websites to enrich CRM records with live data
+- **Compliance monitoring** — check regulatory pages, terms of service, and policy updates
+
+### Compatible AI Frameworks and Clients
+
+Works with any tool that supports MCP (Model Context Protocol):
+
+- **Claude Desktop** / **Claude Code** — Anthropic's AI assistant
+- **Cursor** — AI-powered code editor
+- **Windsurf** — Codeium's AI IDE
+- **Cline** — VS Code AI assistant
+- **GitHub Copilot** — via MCP configuration
+- **Custom agents** — any framework using the MCP SDK (Python, TypeScript, Go)
+- **n8n** — workflow automation via [n8n-nodes-alterlab](https://www.npmjs.com/package/n8n-nodes-alterlab)
+
+---
+
 ## Contributing
 
 ```bash

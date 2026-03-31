@@ -1,7 +1,8 @@
 {
   "name": "alterlab-mcp-server",
+  "mcpName": "io.alterlab/mcp-server",
   "version": "1.1.0",
-  "description": "MCP server for AlterLab web scraping API — scrape, extract, screenshot, and authenticated scraping",
+  "description": "MCP server for web scraping, structured data extraction, and screenshots — give Claude, Cursor, Windsurf, and AI agents the ability to scrape any website with automatic anti-bot bypass",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
@@ -14,13 +15,29 @@
   },
   "keywords": [
     "mcp",
-    "scraping",
-    "web-scraping",
-    "alterlab",
+    "mcp-server",
     "model-context-protocol",
+    "web-scraping",
+    "scraping",
+    "scraper",
+    "crawler",
+    "crawling",
+    "data-extraction",
+    "structured-data",
+    "screenshot",
+    "ai-agent",
+    "agentic",
+    "llm",
+    "llm-tools",
     "claude",
     "cursor",
-    "windsurf"
+    "windsurf",
+    "cline",
+    "copilot",
+    "anti-bot",
+    "headless-browser",
+    "proxy",
+    "alterlab"
   ],
   "author": "AlterLab",
   "license": "MIT",
@@ -41,6 +58,7 @@
   },
   "files": [
     "dist",
+    "server.json",
     "README.md",
     "LICENSE"
   ]
