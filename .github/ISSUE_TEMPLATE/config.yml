@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: AlterLab Documentation
+    url: https://docs.alterlab.io/api
+    about: Check the API documentation for usage questions
+  - name: Support
+    url: mailto:support@alterlab.io
+    about: Contact support for account or billing questions
