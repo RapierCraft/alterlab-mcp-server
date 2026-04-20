@@ -192,8 +192,8 @@ export const TIER_NAMES: Record<string, string> = {
 export const TIER_PRICES: Record<string, string> = {
   "1": "$0.0002",
   "2": "$0.0003",
-  "3": "$0.0005",
-  "3.5": "$0.0007",
-  "4": "$0.001",
+  "3": "$0.002",
+  "3.5": "$0.0025",
+  "4": "$0.004",
   "5": "$0.02",
 };
