@@ -7,29 +7,39 @@ import { formatExtractResponse } from "../format.js";
 export const extractSchema = z.object({
   url: z.string().url().describe("URL to extract structured data from"),
   extraction_profile: z
-    .enum(["auto", "product", "article", "job_posting", "faq", "recipe", "event"])
+    .enum([
+      "auto",
+      "product",
+      "article",
+      "job_posting",
+      "faq",
+      "recipe",
+      "event",
+    ])
     .default("auto")
     .describe(
       "Pre-defined extraction profile. 'product' extracts price/title/reviews, " +
-        "'article' extracts title/author/body, etc. 'auto' detects the page type"
+        "'article' extracts title/author/body, etc. 'auto' detects the page type",
     ),
   extraction_schema: z
     .record(z.unknown())
     .optional()
     .describe(
       "Custom JSON Schema for extraction. Fields are mapped from page content. " +
-        "Overrides extraction_profile when provided"
+        "Overrides extraction_profile when provided",
     ),
   extraction_prompt: z
     .string()
     .optional()
     .describe(
-      "Natural language instructions for extraction (e.g., 'Extract all product prices and ratings')"
+      "Natural language instructions for extraction (e.g., 'Extract all product prices and ratings')",
     ),
   render_js: z
     .boolean()
     .default(false)
-    .describe("Render JavaScript using headless browser (+3 credits)"),
+    .describe(
+      "Render JavaScript using headless browser (forces Tier 4 minimum — no separate add-on charge)",
+    ),
   use_proxy: z
     .boolean()
     .default(false)
@@ -44,7 +54,7 @@ export const extractDescription =
 
 export async function handleExtract(
   client: AlterLabClient,
-  params: z.infer<typeof extractSchema>
+  params: z.infer<typeof extractSchema>,
 ): Promise<CallToolResult> {
   try {
     const response = await client.scrape({
