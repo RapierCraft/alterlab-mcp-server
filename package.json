@@ -1,7 +1,7 @@
 {
   "name": "alterlab-mcp-server",
   "mcpName": "io.alterlab/mcp-server",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "MCP server for web scraping, structured data extraction, and screenshots — give Claude, Cursor, Windsurf, and AI agents the ability to scrape any website with automatic anti-bot bypass",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
