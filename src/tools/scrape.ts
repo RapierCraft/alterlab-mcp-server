@@ -9,7 +9,9 @@ export const scrapeSchema = z.object({
   mode: z
     .enum(["auto", "html", "js", "pdf", "ocr"])
     .default("auto")
-    .describe("Scraping mode: auto (recommended), html, js (headless browser), pdf, or ocr"),
+    .describe(
+      "Scraping mode: auto (recommended), html, js (headless browser), pdf, or ocr",
+    ),
   formats: z
     .array(z.enum(["text", "json", "html", "markdown"]))
     .default(["markdown"])
@@ -17,19 +19,27 @@ export const scrapeSchema = z.object({
   render_js: z
     .boolean()
     .default(false)
-    .describe("Render JavaScript using headless browser (+3 credits). Required for JS-heavy sites"),
+    .describe(
+      "Render JavaScript using headless browser (forces Tier 4 minimum — no separate add-on charge). Required for JS-heavy sites",
+    ),
   use_proxy: z
     .boolean()
     .default(false)
-    .describe("Route through premium proxy (+1 credit). Helps bypass geo-restrictions and anti-bot"),
+    .describe(
+      "Route through premium proxy (+1 credit). Helps bypass geo-restrictions and anti-bot",
+    ),
   proxy_country: z
     .string()
     .optional()
-    .describe("ISO country code for geo-targeting (e.g., 'US', 'DE'). Requires use_proxy=true"),
+    .describe(
+      "ISO country code for geo-targeting (e.g., 'US', 'DE'). Requires use_proxy=true",
+    ),
   wait_for: z
     .string()
     .optional()
-    .describe("CSS selector to wait for before extracting content (e.g., '#main-content')"),
+    .describe(
+      "CSS selector to wait for before extracting content (e.g., '#main-content')",
+    ),
   timeout: z
     .number()
     .min(1)
@@ -46,16 +56,16 @@ export const scrapeSchema = z.object({
     .optional()
     .describe(
       "UUID of a stored session for authenticated scraping. " +
-      "Use alterlab_list_sessions to find available sessions. " +
-      "The session's cookies will be injected into the request."
+        "Use alterlab_list_sessions to find available sessions. " +
+        "The session's cookies will be injected into the request.",
     ),
   cookies: z
     .record(z.string(), z.string())
     .optional()
     .describe(
       "Inline cookies as key-value pairs for authenticated scraping " +
-      "(e.g., {\"session_token\": \"abc123\"}). " +
-      "Use this for one-off requests; use session_id for reusable sessions."
+        '(e.g., {"session_token": "abc123"}). ' +
+        "Use this for one-off requests; use session_id for reusable sessions.",
     ),
 });
 
@@ -69,7 +79,7 @@ export const scrapeDescription =
 
 export async function handleScrape(
   client: AlterLabClient,
-  params: z.infer<typeof scrapeSchema>
+  params: z.infer<typeof scrapeSchema>,
 ): Promise<CallToolResult> {
   try {
     const response = await client.scrape({

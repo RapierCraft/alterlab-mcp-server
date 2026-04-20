@@ -13,7 +13,9 @@ export const estimateSchema = z.object({
   render_js: z
     .boolean()
     .default(false)
-    .describe("Include JS rendering cost (+3 credits)"),
+    .describe(
+      "Enable JS rendering (forces Tier 4 minimum — no separate add-on charge)",
+    ),
   use_proxy: z
     .boolean()
     .default(false)
@@ -27,7 +29,7 @@ export const estimateDescription =
 
 export async function handleEstimate(
   client: AlterLabClient,
-  params: z.infer<typeof estimateSchema>
+  params: z.infer<typeof estimateSchema>,
 ): Promise<CallToolResult> {
   try {
     const estimate = await client.estimate({
