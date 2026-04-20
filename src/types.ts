@@ -197,3 +197,52 @@ export const TIER_PRICES: Record<string, string> = {
   "4": "$0.004",
   "5": "$0.02",
 };
+
+// ============================================================================
+// Auth / User Types
+// ============================================================================
+
+/**
+ * Structured rate-limit tier information derived from an account's balance.
+ * Matches the TierInfo Pydantic model in services/api/app/schemas/auth.py.
+ * Returned as part of UserResponse to give API consumers a single place
+ * to read their current rate-limit tier without a separate usage call.
+ */
+export interface TierInfo {
+  /** Human-readable tier name, e.g. 'Free', 'Basic', 'Growth'. */
+  name: string;
+  /** Machine-readable tier identifier, e.g. 'free', 'basic', 'growth'. */
+  slug: string;
+  /** Maximum API requests per minute allowed at this tier. */
+  requests_per_minute: number;
+  /** Maximum number of concurrent scrape requests allowed at this tier. */
+  concurrent_requests: number;
+  /** Minimum account balance (USD) required to qualify for this tier. */
+  min_balance_usd: number;
+  /** Upper balance threshold (USD) for this tier. null means no upper limit. */
+  max_balance_usd: number | null;
+  /** Slug of the next higher tier, or null if already at the top tier. */
+  next_tier_slug: string | null;
+  /** Balance (USD) needed to reach the next tier, or null if at top tier. */
+  next_tier_threshold_usd: number | null;
+}
+
+/**
+ * Current authenticated user with balance-based tier info.
+ * Matches the UserResponse Pydantic model in services/api/app/schemas/auth.py.
+ * Returned by GET /api/v1/auth/me.
+ */
+export interface UserResponse {
+  id: string;
+  email: string;
+  name: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  subscription_tier: string;
+  credits_remaining: number;
+  credits_total: number;
+  welcome_shown: boolean;
+  reduced_bonus: boolean;
+  /** Structured rate-limit tier details for the current balance level. */
+  tier_info?: TierInfo | null;
+}
