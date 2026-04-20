@@ -133,7 +133,7 @@ export function formatEstimateResponse(estimate: CostEstimate): string {
     `- Estimated tier: **${tierName}** (tier ${estimate.estimated_tier})\n` +
     `- Estimated cost: **${tierPrice}** per request\n` +
     `- Confidence: ${estimate.confidence}\n` +
-    `- Max possible cost: tier 4 (browser) = $0.001/req\n\n` +
+    `- Max possible cost: tier 4 (browser) = $0.004/req\n\n` +
     `${estimate.reasoning}`
   );
 }
