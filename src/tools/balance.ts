@@ -12,7 +12,7 @@ export const balanceDescription =
   "No parameters required — uses your API key for identification.";
 
 export async function handleBalance(
-  client: AlterLabClient
+  client: AlterLabClient,
 ): Promise<CallToolResult> {
   try {
     const balance = await client.getBalance();

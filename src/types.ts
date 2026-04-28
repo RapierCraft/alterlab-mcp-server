@@ -3,13 +3,20 @@
 // ============================================================================
 
 export interface AdvancedOptions {
-  render_js?: boolean;
+  render_js?: boolean | "auto";
   screenshot?: boolean;
   markdown?: boolean;
   use_proxy?: boolean;
   proxy_country?: string;
   wait_condition?: string;
   remove_cookie_banners?: boolean;
+  scroll_to_load?: boolean;
+  scroll_count?: number;
+}
+
+export interface LocationOptions {
+  country?: string;
+  language?: string;
 }
 
 export interface UnifiedScrapeRequest {
@@ -17,7 +24,7 @@ export interface UnifiedScrapeRequest {
   mode?: "auto" | "html" | "js" | "pdf" | "ocr";
   sync?: boolean;
   advanced?: AdvancedOptions;
-  formats?: ("text" | "json" | "html" | "markdown")[];
+  formats?: ("text" | "json" | "json_v2" | "html" | "markdown" | "rag")[];
   include_raw_html?: boolean;
   timeout?: number;
   extraction_schema?: Record<string, unknown>;
@@ -35,6 +42,186 @@ export interface UnifiedScrapeRequest {
   wait_until?: string;
   session_id?: string;
   cookies?: Record<string, string>;
+  location?: LocationOptions;
+}
+
+// ============================================================================
+// Crawl Types
+// ============================================================================
+
+export interface CrawlAdvancedOptions {
+  render_js?: boolean | "auto";
+  use_proxy?: boolean;
+  wait_for?: string;
+  timeout?: number;
+}
+
+export interface CrawlRequest {
+  url: string;
+  max_pages?: number;
+  max_depth?: number;
+  include_patterns?: string[];
+  exclude_patterns?: string[];
+  sitemap?: "include" | "skip" | "only";
+  sitemap_path?: string;
+  formats?: ("text" | "json" | "json_v2" | "html" | "markdown")[];
+  extraction_schema?: Record<string, unknown>;
+  max_concurrency?: number;
+  respect_robots?: boolean;
+  include_subdomains?: boolean;
+  webhook_url?: string;
+  advanced?: CrawlAdvancedOptions;
+}
+
+export interface CrawlResponse {
+  crawl_id: string;
+  status: string;
+  url: string;
+  created_at?: string;
+}
+
+export interface CrawlStatusResponse {
+  crawl_id: string;
+  status: string;
+  url: string;
+  pages_scraped?: number;
+  pages_total?: number;
+  credits_used?: number;
+  results?: Record<string, unknown>[];
+  error?: string;
+}
+
+export interface CrawlCancelResponse {
+  crawl_id: string;
+  status: string;
+  pages_scraped?: number;
+  credits_refunded?: number;
+}
+
+// ============================================================================
+// Search Types
+// ============================================================================
+
+export interface SearchRequest {
+  query: string;
+  num_results?: number;
+  page?: number;
+  domain?: string;
+  country?: string;
+  language?: string;
+  time_range?: "hour" | "day" | "week" | "month" | "year";
+  scrape_results?: boolean;
+  formats?: ("text" | "json" | "json_v2" | "html" | "markdown")[];
+  extraction_schema?: Record<string, unknown>;
+}
+
+export interface SearchResponse {
+  search_id: string;
+  query: string;
+  results_requested: number;
+  results_count: number;
+  credits_used: number;
+  results: Record<string, unknown>[];
+  cost_breakdown?: Record<string, unknown>;
+  featured_snippet?: Record<string, unknown>;
+  knowledge_panel?: Record<string, unknown>;
+  people_also_ask?: Record<string, unknown>[];
+}
+
+// ============================================================================
+// Map Types
+// ============================================================================
+
+export interface MapRequest {
+  url: string;
+  max_pages?: number;
+  max_depth?: number;
+  include_patterns?: string[];
+  exclude_patterns?: string[];
+  search?: string;
+  sitemap?: "skip" | "include" | "only";
+  sitemap_path?: string;
+  include_metadata?: boolean;
+  include_subdomains?: boolean;
+  respect_robots?: boolean;
+}
+
+export interface MapResponse {
+  map_id: string;
+  total_urls: number;
+  urls: Record<string, unknown>[];
+  sitemap_found: boolean;
+  robots_txt?: Record<string, unknown>;
+  credits_used: number;
+}
+
+// ============================================================================
+// Extract Types
+// ============================================================================
+
+export interface ExtractRequest {
+  content: string;
+  content_type?: "html" | "text" | "markdown";
+  extraction_schema?: Record<string, unknown>;
+  extraction_profile?:
+    | "auto"
+    | "product"
+    | "article"
+    | "job_posting"
+    | "faq"
+    | "recipe"
+    | "event";
+  extraction_prompt?: string;
+  formats?: ("text" | "json" | "json_v2" | "html" | "markdown" | "rag")[];
+  source_url?: string;
+  evidence?: boolean;
+}
+
+export interface ExtractResponse {
+  extract_id: string;
+  formats: Record<string, unknown>;
+  credits_used: number;
+  model_used?: string;
+  extraction_method: string;
+  content_size_chars: number;
+}
+
+// ============================================================================
+// Batch Types
+// ============================================================================
+
+export interface BatchItemRequest {
+  url: string;
+  mode?: "auto" | "html" | "js" | "pdf" | "ocr";
+  formats?: ("text" | "json" | "json_v2" | "html" | "markdown" | "rag")[];
+  extraction_schema?: Record<string, unknown>;
+  timeout?: number;
+  wait_for?: string;
+  cache?: boolean;
+  advanced?: AdvancedOptions;
+}
+
+export interface BatchRequest {
+  urls: BatchItemRequest[];
+  webhook_url?: string;
+}
+
+export interface BatchResponse {
+  batch_id: string;
+  status: string;
+  total_urls: number;
+  estimated_credits: number;
+  job_ids?: string[];
+}
+
+export interface BatchStatusResponse {
+  batch_id: string;
+  status: string;
+  total_urls: number;
+  completed?: number;
+  failed?: number;
+  credits_used?: number;
+  items?: Record<string, unknown>[];
 }
 
 // ============================================================================

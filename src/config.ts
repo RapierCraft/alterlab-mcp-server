@@ -10,7 +10,7 @@ export function loadConfig(): Config {
       "Error: ALTERLAB_API_KEY environment variable is required.\n\n" +
         "Get your API key at https://alterlab.io/dashboard/api-keys\n\n" +
         "Then add it to your MCP config:\n" +
-        '  "env": { "ALTERLAB_API_KEY": "sk_live_..." }'
+        '  "env": { "ALTERLAB_API_KEY": "sk_live_..." }',
     );
     process.exit(1);
   }

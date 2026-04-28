@@ -8,7 +8,7 @@ export interface ApiError {
 
 export function formatErrorResult(
   error: ApiError | Error,
-  context?: { url?: string }
+  context?: { url?: string },
 ): CallToolResult {
   if (error instanceof Error) {
     // Network/timeout errors
@@ -40,7 +40,11 @@ export function formatErrorResult(
     };
   }
 
-  const url = error.url ? ` for ${error.url}` : context?.url ? ` for ${context.url}` : "";
+  const url = error.url
+    ? ` for ${error.url}`
+    : context?.url
+      ? ` for ${context.url}`
+      : "";
   const detail = error.detail || "Unknown error";
 
   switch (error.status) {

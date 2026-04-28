@@ -23,7 +23,7 @@ export const screenshotDescription =
 
 export async function handleScreenshot(
   client: AlterLabClient,
-  params: z.infer<typeof screenshotSchema>
+  params: z.infer<typeof screenshotSchema>,
 ): Promise<CallToolResult> {
   try {
     // Screenshot requires render_js=true and screenshot=true
@@ -59,7 +59,7 @@ export async function handleScreenshot(
 
     // Fetch the screenshot image and return as base64
     const base64 = await client.fetchScreenshotAsBase64(
-      response.screenshot_url
+      response.screenshot_url,
     );
 
     const tier = response.billing.tier_used;
