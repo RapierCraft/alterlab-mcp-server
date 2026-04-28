@@ -30,6 +30,31 @@ import {
   handleBalance,
 } from "./tools/balance.js";
 import {
+  crawlSchema,
+  crawlDescription,
+  handleCrawl,
+  crawlStatusSchema,
+  crawlStatusDescription,
+  handleCrawlStatus,
+  crawlCancelSchema,
+  crawlCancelDescription,
+  handleCrawlCancel,
+} from "./tools/crawl.js";
+import {
+  searchSchema,
+  searchDescription,
+  handleSearch,
+} from "./tools/search.js";
+import { mapSchema, mapDescription, handleMap } from "./tools/map.js";
+import {
+  batchSchema,
+  batchDescription,
+  handleBatch,
+  batchStatusSchema,
+  batchStatusDescription,
+  handleBatchStatus,
+} from "./tools/batch.js";
+import {
   listSessionsSchema,
   listSessionsDescription,
   handleListSessions,
@@ -58,7 +83,7 @@ function createServer(config: Config): McpServer {
 
   const server = new McpServer({
     name: "alterlab",
-    version: "1.1.1",
+    version: "1.2.0",
   });
 
   // Register tools
@@ -95,6 +120,50 @@ function createServer(config: Config): McpServer {
     balanceDescription,
     balanceSchema.shape,
     () => handleBalance(client),
+  );
+
+  // Crawl tools
+  server.tool("alterlab_crawl", crawlDescription, crawlSchema.shape, (params) =>
+    handleCrawl(client, params as any),
+  );
+
+  server.tool(
+    "alterlab_crawl_status",
+    crawlStatusDescription,
+    crawlStatusSchema.shape,
+    (params) => handleCrawlStatus(client, params as any),
+  );
+
+  server.tool(
+    "alterlab_crawl_cancel",
+    crawlCancelDescription,
+    crawlCancelSchema.shape,
+    (params) => handleCrawlCancel(client, params as any),
+  );
+
+  // Search tool
+  server.tool(
+    "alterlab_search",
+    searchDescription,
+    searchSchema.shape,
+    (params) => handleSearch(client, params as any),
+  );
+
+  // Map tool
+  server.tool("alterlab_map", mapDescription, mapSchema.shape, (params) =>
+    handleMap(client, params as any),
+  );
+
+  // Batch tools
+  server.tool("alterlab_batch", batchDescription, batchSchema.shape, (params) =>
+    handleBatch(client, params as any),
+  );
+
+  server.tool(
+    "alterlab_batch_status",
+    batchStatusDescription,
+    batchStatusSchema.shape,
+    (params) => handleBatchStatus(client, params as any),
   );
 
   // Session management tools

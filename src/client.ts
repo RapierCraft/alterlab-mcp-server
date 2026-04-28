@@ -2,7 +2,20 @@ import { type Config } from "./config.js";
 import { type ApiError } from "./errors.js";
 import {
   type BalanceResponse,
+  type BatchRequest,
+  type BatchResponse,
+  type BatchStatusResponse,
   type CostEstimate,
+  type CrawlCancelResponse,
+  type CrawlRequest,
+  type CrawlResponse,
+  type CrawlStatusResponse,
+  type ExtractRequest,
+  type ExtractResponse,
+  type MapRequest,
+  type MapResponse,
+  type SearchRequest,
+  type SearchResponse,
   type Session,
   type SessionCreateRequest,
   type SessionCreateResponse,
@@ -157,6 +170,65 @@ export class AlterLabClient {
       `/api/v1/sessions/${sessionId}`,
     );
   }
+
+  // ============================================================================
+  // Crawl methods
+  // ============================================================================
+
+  async startCrawl(params: CrawlRequest): Promise<CrawlResponse> {
+    return this.request<CrawlResponse>("POST", "/api/v1/crawl", params);
+  }
+
+  async getCrawlStatus(crawlId: string): Promise<CrawlStatusResponse> {
+    return this.request<CrawlStatusResponse>("GET", `/api/v1/crawl/${crawlId}`);
+  }
+
+  async cancelCrawl(crawlId: string): Promise<CrawlCancelResponse> {
+    return this.request<CrawlCancelResponse>(
+      "DELETE",
+      `/api/v1/crawl/${crawlId}`,
+    );
+  }
+
+  // ============================================================================
+  // Search method
+  // ============================================================================
+
+  async search(params: SearchRequest): Promise<SearchResponse> {
+    return this.request<SearchResponse>("POST", "/api/v1/search", params);
+  }
+
+  // ============================================================================
+  // Map method
+  // ============================================================================
+
+  async map(params: MapRequest): Promise<MapResponse> {
+    return this.request<MapResponse>("POST", "/api/v1/map", params);
+  }
+
+  // ============================================================================
+  // Extract method (standalone — bring your own content)
+  // ============================================================================
+
+  async extract(params: ExtractRequest): Promise<ExtractResponse> {
+    return this.request<ExtractResponse>("POST", "/api/v1/extract", params);
+  }
+
+  // ============================================================================
+  // Batch methods
+  // ============================================================================
+
+  async submitBatch(params: BatchRequest): Promise<BatchResponse> {
+    return this.request<BatchResponse>("POST", "/api/v1/batch", params);
+  }
+
+  async getBatchStatus(batchId: string): Promise<BatchStatusResponse> {
+    return this.request<BatchStatusResponse>("GET", `/api/v1/batch/${batchId}`);
+  }
+
+  // ============================================================================
+  // Screenshot fetch helper
+  // ============================================================================
 
   async fetchScreenshotAsBase64(screenshotUrl: string): Promise<string> {
     // screenshot_url is a relative path like /downloads/screenshots/...
