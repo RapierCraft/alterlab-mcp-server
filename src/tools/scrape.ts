@@ -6,6 +6,26 @@ import { formatScrapeResponse } from "../format.js";
 
 export const scrapeSchema = z.object({
   url: z.string().url().describe("URL to scrape"),
+  method: z
+    .enum(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"])
+    .default("GET")
+    .describe(
+      "HTTP method for the request. Default GET (standard page scraping). " +
+        "Use POST for GraphQL endpoints, form submissions, REST API calls. " +
+        "Use PUT/PATCH for REST API updates. " +
+        "When using POST/PUT/PATCH, provide body with the request payload.",
+    ),
+  body: z
+    .string()
+    .optional()
+    .describe(
+      "Request body for POST/PUT/PATCH requests. " +
+        "For GraphQL: JSON string with 'query' and optional 'variables' fields " +
+        '(e.g., \'{"query": "{ user { id name } }"}\').' +
+        "For REST APIs: JSON-encoded payload string. " +
+        "For form submissions: URL-encoded key=value pairs (e.g., 'name=Alice&email=alice@example.com'). " +
+        "Omit for GET/HEAD/DELETE requests.",
+    ),
   mode: z
     .enum(["auto", "html", "js", "pdf", "ocr"])
     .default("auto")
@@ -127,6 +147,9 @@ export const scrapeDescription =
   "Scrape a URL and return its content as markdown, text, HTML, JSON, or structured sections. " +
   "Automatically handles anti-bot protection with tier escalation. " +
   "Returns markdown by default — optimized for LLM context. " +
+  "Supports GET (default) and POST/PUT/PATCH/DELETE/HEAD via the method parameter. " +
+  "Use method='POST' with body for GraphQL APIs, REST endpoints, and form submissions. " +
+  "For GraphQL: set body='{\"query\": \"{ ... }\"}' and method='POST'. " +
   "Use render_js=true for JavaScript-heavy sites (React, Angular, SPAs). " +
   "Use render_js='auto' for mixed sites to detect JS needs per-page (saves 30-60%). " +
   "Use use_proxy=true for geo-restricted or heavily protected sites. " +
@@ -143,6 +166,8 @@ export async function handleScrape(
   try {
     const response = await client.scrape({
       url: params.url,
+      method: params.method,
+      body: params.body,
       mode: params.mode,
       formats: params.formats,
       sync: true,
