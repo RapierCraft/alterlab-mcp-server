@@ -69,6 +69,16 @@ export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
     parts.push(`Tip: ${response.billing.optimization_suggestion}`);
   }
 
+  if (response.content_truncated) {
+    const t = response.content_truncated;
+    const truncatedMB = (t.truncated_at_bytes / 1_048_576).toFixed(1);
+    const originalMB = (t.original_size_bytes / 1_048_576).toFixed(1);
+    parts.push(
+      `Warning: Content truncated at ${truncatedMB} MB (original: ${originalMB} MB, reason: ${t.truncation_reason}). ` +
+        `Increase max_response_bytes or use a more targeted selector to capture the full page.`,
+    );
+  }
+
   return parts.join("\n");
 }
 

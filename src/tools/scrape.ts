@@ -72,6 +72,19 @@ export const scrapeSchema = z.object({
     .max(300)
     .default(90)
     .describe("Request timeout in seconds (1-300)"),
+  max_response_bytes: z
+    .number()
+    .int()
+    .min(0)
+    .max(52_428_800)
+    .default(5_242_880)
+    .optional()
+    .describe(
+      "Soft cap on raw response body size in bytes. " +
+        "When the downloaded HTML exceeds this value it is truncated before extraction. " +
+        "Default: 5 MB (5242880). Set to 0 for no limit. Maximum: 50 MB (52428800). " +
+        "Useful for very large pages where you only need the beginning of the content.",
+    ),
   include_raw_html: z
     .boolean()
     .default(false)
@@ -172,6 +185,7 @@ export async function handleScrape(
       formats: params.formats,
       sync: true,
       timeout: params.timeout,
+      max_response_bytes: params.max_response_bytes,
       include_raw_html: params.include_raw_html,
       wait_for: params.wait_for,
       session_id: params.session_id,
