@@ -29,6 +29,7 @@ export interface UnifiedScrapeRequest {
   formats?: ("text" | "json" | "json_v2" | "html" | "markdown" | "rag")[];
   include_raw_html?: boolean;
   timeout?: number;
+  max_response_bytes?: number;
   extraction_schema?: Record<string, unknown>;
   extraction_prompt?: string;
   extraction_profile?:
@@ -308,6 +309,25 @@ export interface SessionRefreshRequest {
 // API Response Types
 // ============================================================================
 
+export interface ContentTruncationInfo {
+  /** Always true when this object is present. */
+  truncated: boolean;
+  /** Number of bytes at which the content was cut before processing. */
+  truncated_at_bytes: number;
+  /** Original content size in bytes before truncation. */
+  original_size_bytes: number;
+  /**
+   * Why truncation occurred:
+   * - 'readability_input_cap': HTML exceeded 2 MB before Readability processing
+   * - 'readability_output_cap': extracted text exceeded the output size cap
+   * - 'response_body_cap': raw response body exceeded max_response_bytes limit
+   */
+  truncation_reason:
+    | "readability_input_cap"
+    | "readability_output_cap"
+    | "response_body_cap";
+}
+
 export interface TierEscalationDetail {
   tier: string;
   result: "success" | "failed" | "skipped";
@@ -344,6 +364,7 @@ export interface UnifiedScrapeResponse {
   screenshot_url?: string;
   pdf_url?: string;
   filtered_content?: Record<string, unknown>;
+  content_truncated?: ContentTruncationInfo;
   billing: BillingDetails;
   extraction_method?: string;
   version?: string;
