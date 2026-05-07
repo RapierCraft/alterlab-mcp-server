@@ -21,6 +21,8 @@ export interface LocationOptions {
 
 export interface UnifiedScrapeRequest {
   url: string;
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD";
+  body?: string;
   mode?: "auto" | "html" | "js" | "pdf" | "ocr";
   sync?: boolean;
   advanced?: AdvancedOptions;
