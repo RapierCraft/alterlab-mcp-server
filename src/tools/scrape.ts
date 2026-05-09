@@ -33,12 +33,22 @@ export const scrapeSchema = z.object({
       "Scraping mode: auto (recommended), html, js (headless browser), pdf, or ocr",
     ),
   formats: z
-    .array(z.enum(["text", "json", "json_v2", "html", "markdown", "rag"]))
+    .array(z.enum(["text", "json", "json_v2", "html", "markdown", "rag", "content"]))
     .default(["markdown"])
     .describe(
       "Output formats. 'markdown' is best for LLM consumption. " +
         "'json_v2' returns a structured section tree (headings + content blocks). " +
-        "'rag' returns chunked text optimized for retrieval-augmented generation.",
+        "'rag' returns chunked text optimized for retrieval-augmented generation. " +
+        "'content' returns body_markdown + content_hash + images + links for AI/KB pipelines.",
+    ),
+  extraction_schema: z
+    .record(z.unknown())
+    .optional()
+    .describe(
+      "JSON schema for structured extraction. " +
+        "The API extracts fields matching this schema from the scraped page using LLM. " +
+        "Result is returned in extraction_result. " +
+        'Example: { "title": "string", "price": "number", "in_stock": "boolean" }',
     ),
   render_js: z
     .union([z.boolean(), z.literal("auto")])
@@ -168,6 +178,8 @@ export const scrapeDescription =
   "Use use_proxy=true for geo-restricted or heavily protected sites. " +
   "Use formats=['json_v2'] for a structured section tree (headings + content blocks). " +
   "Use formats=['rag'] for chunked text optimized for RAG pipelines. " +
+  "Use formats=['content'] for AI/KB pipelines — returns body_markdown, content_hash, images, links. " +
+  "Use extraction_schema to extract structured fields from the page using LLM (returned in extraction_result). " +
   "Supports authenticated scraping via session_id (stored session) or inline cookies. " +
   "Use scroll_to_load=true for infinite-scroll pages that lazy-load content. " +
   "Use location.country to scrape geo-targeted content.";
@@ -191,6 +203,7 @@ export async function handleScrape(
       session_id: params.session_id,
       cookies: params.cookies,
       location: params.location,
+      extraction_schema: params.extraction_schema,
       advanced: {
         render_js: params.render_js,
         use_proxy: params.use_proxy,
