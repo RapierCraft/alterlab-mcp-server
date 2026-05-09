@@ -26,7 +26,7 @@ export interface UnifiedScrapeRequest {
   mode?: "auto" | "html" | "js" | "pdf" | "ocr";
   sync?: boolean;
   advanced?: AdvancedOptions;
-  formats?: ("text" | "json" | "json_v2" | "html" | "markdown" | "rag")[];
+  formats?: ("text" | "json" | "json_v2" | "html" | "markdown" | "rag" | "content")[];
   include_raw_html?: boolean;
   timeout?: number;
   max_response_bytes?: number;
@@ -67,7 +67,7 @@ export interface CrawlRequest {
   exclude_patterns?: string[];
   sitemap?: "include" | "skip" | "only";
   sitemap_path?: string;
-  formats?: ("text" | "json" | "json_v2" | "html" | "markdown")[];
+  formats?: ("text" | "json" | "json_v2" | "html" | "markdown" | "content")[];
   extraction_schema?: Record<string, unknown>;
   max_concurrency?: number;
   respect_robots?: boolean;
@@ -114,7 +114,7 @@ export interface SearchRequest {
   language?: string;
   time_range?: "hour" | "day" | "week" | "month" | "year";
   scrape_results?: boolean;
-  formats?: ("text" | "json" | "json_v2" | "html" | "markdown")[];
+  formats?: ("text" | "json" | "json_v2" | "html" | "markdown" | "content")[];
   extraction_schema?: Record<string, unknown>;
 }
 
@@ -175,7 +175,7 @@ export interface ExtractRequest {
     | "recipe"
     | "event";
   extraction_prompt?: string;
-  formats?: ("text" | "json" | "json_v2" | "html" | "markdown" | "rag")[];
+  formats?: ("text" | "json" | "json_v2" | "html" | "markdown" | "rag" | "content")[];
   source_url?: string;
   evidence?: boolean;
 }
@@ -196,7 +196,7 @@ export interface ExtractResponse {
 export interface BatchItemRequest {
   url: string;
   mode?: "auto" | "html" | "js" | "pdf" | "ocr";
-  formats?: ("text" | "json" | "json_v2" | "html" | "markdown" | "rag")[];
+  formats?: ("text" | "json" | "json_v2" | "html" | "markdown" | "rag" | "content")[];
   extraction_schema?: Record<string, unknown>;
   timeout?: number;
   wait_for?: string;
