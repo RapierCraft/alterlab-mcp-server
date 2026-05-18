@@ -164,6 +164,64 @@ export const scrapeSchema = z.object({
       "Geo-targeting parameters for localized content scraping. " +
         "Controls proxy country routing, Accept-Language header, and browser locale.",
     ),
+
+  // ── Auto-generated from OpenAPI spec ──
+  actions:
+    z.union([z.array(z.unknown()), z.unknown()]).optional().describe("Browser automation actions to execute after page load (max 20). Requires render_js=true. Actions execute sequentially; failed actions are skipped (don't abort the sequence). Results returned in action_results."),
+  cache:
+    z.boolean().default(false).describe("Enable caching. When True, results may be returned from cache on repeat calls where the full cache key matches: URL, scraping mode, HTTP method, request body, output options (formats, extraction config, render settings, geo-targeting), and user identity — each user's cache is isolated. For GET/HEAD: standard opt-in caching. For POST: only valid when the endpoint is idempotent (e.g. GraphQL queries, read-only REST POSTs) — caching a mutating POST will cause stale responses to be returned instead of executing the mutation. PUT, PATCH, and DELETE requests are never cached regardless of this flag."),
+  cache_ttl:
+    z.union([z.number(), z.unknown()]).optional().describe("Cache TTL in seconds (60-86400). Defaults to 3600 (60 min) when cache=True."),
+  content_type:
+    z.union([z.enum(["application/json", "application/x-www-form-urlencoded", "text/plain", "application/graphql"]), z.unknown()]).optional().describe("Content-Type header for the request body. Defaults to 'application/json' when body is provided. Supported values: 'application/json', 'application/x-www-form-urlencoded', 'text/plain', 'application/graphql'. multipart/form-data (file uploads) is not supported. Ignored when body is not set."),
+  cost_controls:
+    z.union([z.unknown()]).optional().describe("See AlterLab API docs for cost_controls."),
+  embeddings:
+    z.union([z.unknown()]).optional().describe("Optional embeddings configuration. When enabled, scraped text content is chunked and embedded using OpenAI models. +$0.001 per page."),
+  enable_scroll:
+    z.union([z.boolean(), z.unknown()]).optional().describe("Force enable scrolling for lazy-load images. true: Always scroll (captures dynamic images, +5-10s), false: Never scroll (faster, may miss dynamic images), null: Auto (scroll unless social media site)"),
+  extraction_profile:
+    z.union([z.enum(["auto", "product", "article", "job_posting", "faq", "recipe", "event"]), z.unknown()]).default("auto").describe("Pre-defined extraction profile (schema template)"),
+  extraction_prompt:
+    z.union([z.string(), z.unknown()]).optional().describe("Natural language instructions for extraction"),
+  filter_content:
+    z.boolean().default(false).describe("Apply quality filtering to extracted content. When False (default), returns all parsed content without quality thresholds (lossless mode)."),
+  flatten_shadow_dom:
+    z.boolean().default(false).describe("Flatten Shadow DOM roots into regular DOM for extraction (free, requires render_js). Web Components with shadow roots become visible in the serialized HTML."),
+  force_refresh:
+    z.boolean().default(false).describe("Force fresh fetch even if cache=True. Deprecated: prefer cache=False."),
+  generate_pdf:
+    z.boolean().default(false).describe("Generate PDF of rendered page (+$0.0004, requires render_js)"),
+  headers:
+    z.union([z.record(z.unknown()), z.unknown()]).optional().describe("Custom HTTP headers to include in the request to the target URL. Hop-by-hop headers (Connection, Transfer-Encoding, Host, etc.) are not allowed."),
+  include_iframes:
+    z.boolean().default(false).describe("Inline iframe content into the main document (free, requires render_js). Same-origin iframes are read directly; cross-origin iframes are marked but not fetched."),
+  markdown:
+    z.boolean().default(false).describe("Extract content as Markdown (free)"),
+  ocr:
+    z.boolean().default(false).describe("Extract text from images using OCR (+$0.001)"),
+  ocr_language:
+    z.string().default("eng").describe("See AlterLab API docs for ocr_language."),
+  pdf_format:
+    z.string().default("markdown").describe("See AlterLab API docs for pdf_format."),
+  promote_schema_org:
+    z.boolean().default(true).describe("Use Schema.org as primary structure when available"),
+  proxy_integration_id:
+    z.union([z.string(), z.unknown()]).optional().describe("Specific proxy integration ID to use (requires use_own_proxy=true)"),
+  screenshot:
+    z.boolean().default(false).describe("Capture full-page screenshot (+$0.0002, requires render_js)"),
+  section_filter:
+    z.union([z.unknown()]).optional().describe("Filter options for json_v2 section tree output. Only applies when 'json_v2' is in the formats list. Controls which sections and content blocks are included in the response."),
+  session_headers:
+    z.union([z.record(z.unknown()), z.unknown()]).optional().describe("Inline auth headers (e.g. Authorization: Bearer). Merged with session headers if session_id is also resolving headers."),
+  use_own_proxy:
+    z.boolean().default(false).describe("Use your own integrated proxy instead of system proxy ($0.0008/request)"),
+  use_system_proxy:
+    z.boolean().default(false).describe("Override your default proxy integration and use AlterLab's system proxy instead"),
+  wait_condition:
+    z.string().default("networkidle").describe("Wait condition for JS rendering (domcontentloaded|networkidle|load)"),
+  wait_until:
+    z.string().default("networkidle").describe("See AlterLab API docs for wait_until."),
 });
 
 export const scrapeDescription =
