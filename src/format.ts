@@ -48,6 +48,28 @@ export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
     parts.push(content);
   }
 
+  // Extraction result (LLM-extracted fields from extraction_prompt)
+  if (response.extraction_result) {
+    parts.push(
+      "\n**Extraction Result**\n```json\n" +
+        JSON.stringify(response.extraction_result, null, 2) +
+        "\n```",
+    );
+  }
+
+  // Browser action results
+  if (response.action_results && response.action_results.length > 0) {
+    const actionSummary = response.action_results
+      .map((a: Record<string, unknown>, i: number) => {
+        const status = a.success ? "ok" : "failed";
+        const type = String(a.type ?? "action");
+        const result = a.result ? ` → ${String(a.result)}` : "";
+        return `  ${i + 1}. [${status}] ${type}${result}`;
+      })
+      .join("\n");
+    parts.push(`\n**Action Results**\n${actionSummary}`);
+  }
+
   // Metadata footer
   const tier = response.billing.tier_used;
   const tierName = TIER_NAMES[tier] || tier;
@@ -67,6 +89,33 @@ export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
 
   if (response.billing.optimization_suggestion) {
     parts.push(`Tip: ${response.billing.optimization_suggestion}`);
+  }
+
+  // Warnings — surface all warning variants
+  if (response.warning) {
+    parts.push(`Warning: ${response.warning}`);
+  }
+
+  if (response.domain_warning) {
+    let detail = "";
+    if (response.domain_difficulty) {
+      const d = response.domain_difficulty as Record<string, unknown>;
+      const rate = d.success_rate !== undefined
+        ? ` (success rate: ${(Number(d.success_rate) * 100).toFixed(0)}%)`
+        : "";
+      detail = rate;
+    }
+    parts.push(`Domain Warning: ${response.domain_warning}${detail}`);
+  }
+
+  if (response.tier_cap_warning) {
+    const w = response.tier_cap_warning as Record<string, unknown>;
+    const domainMin = w.domain_min_tier !== undefined ? ` Domain requires tier ${w.domain_min_tier}.` : "";
+    if (w.your_max_tier !== undefined) {
+      parts.push(`Tier Cap Warning: Your max_tier (${w.your_max_tier}) is below the domain minimum.${domainMin}`);
+    } else if (w.your_force_tier !== undefined) {
+      parts.push(`Tier Cap Warning: Your force_tier (${w.your_force_tier}) is below the domain minimum.${domainMin}`);
+    }
   }
 
   if (response.content_truncated) {
