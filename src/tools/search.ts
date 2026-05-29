@@ -63,6 +63,13 @@ export const searchSchema = z.object({
     .record(z.unknown())
     .optional()
     .describe("JSON schema for structured extraction when scrape_results=true"),
+  safe_search: z
+    .boolean()
+    .optional()
+    .describe(
+      "Enable safe search filtering to exclude adult content from results. " +
+        "Defaults to the search engine's own safe-search setting when omitted.",
+    ),
 });
 
 export const searchDescription =
@@ -90,6 +97,7 @@ export async function handleSearch(
       scrape_results: params.scrape_results,
       formats: params.formats,
       extraction_schema: params.extraction_schema,
+      safe_search: params.safe_search,
     });
 
     const text = formatSearchResponse(response, params.query);

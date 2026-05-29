@@ -19,14 +19,35 @@ export interface LocationOptions {
   language?: string;
 }
 
+export interface CostControls {
+  force_tier?: "1" | "2" | "3" | "3.5" | "4";
+  max_tier?: "1" | "2" | "3" | "3.5" | "4";
+  max_credits?: number;
+  prefer_cost?: boolean;
+  prefer_speed?: boolean;
+  fail_fast?: boolean;
+  time_budget?: number;
+}
+
+export interface CrawlCostControls {
+  max_credits?: number;
+  max_tier?: "1" | "2" | "3" | "3.5" | "4";
+  force_tier?: "1" | "2" | "3" | "3.5" | "4";
+}
+
 export interface UnifiedScrapeRequest {
   url: string;
-  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD";
+  method?: "GET" | "POST";
   body?: string;
+  content_type?:
+    | "application/json"
+    | "application/x-www-form-urlencoded"
+    | "text/plain"
+    | "application/graphql";
   mode?: "auto" | "html" | "js" | "pdf" | "ocr";
   sync?: boolean;
   advanced?: AdvancedOptions;
-  formats?: ("text" | "json" | "json_v2" | "html" | "markdown" | "rag" | "content")[];
+  formats?: ("text" | "json" | "json_v2" | "html" | "markdown" | "rag")[];
   include_raw_html?: boolean;
   timeout?: number;
   max_response_bytes?: number;
@@ -40,6 +61,13 @@ export interface UnifiedScrapeRequest {
     | "faq"
     | "recipe"
     | "event";
+  evidence?: boolean;
+  filter_content?: boolean;
+  promote_schema_org?: boolean;
+  cache?: boolean;
+  cache_ttl?: number;
+  force_refresh?: boolean;
+  cost_controls?: CostControls;
   wait_for?: string;
   screenshot?: boolean;
   wait_until?: string;
@@ -67,12 +95,22 @@ export interface CrawlRequest {
   exclude_patterns?: string[];
   sitemap?: "include" | "skip" | "only";
   sitemap_path?: string;
-  formats?: ("text" | "json" | "json_v2" | "html" | "markdown" | "content")[];
+  formats?: ("text" | "json" | "json_v2" | "html" | "markdown")[];
   extraction_schema?: Record<string, unknown>;
+  extraction_profile?:
+    | "auto"
+    | "product"
+    | "article"
+    | "job_posting"
+    | "faq"
+    | "recipe"
+    | "event";
+  headers?: Record<string, string>;
   max_concurrency?: number;
   respect_robots?: boolean;
   include_subdomains?: boolean;
   webhook_url?: string;
+  cost_controls?: CrawlCostControls;
   advanced?: CrawlAdvancedOptions;
 }
 
@@ -114,8 +152,9 @@ export interface SearchRequest {
   language?: string;
   time_range?: "hour" | "day" | "week" | "month" | "year";
   scrape_results?: boolean;
-  formats?: ("text" | "json" | "json_v2" | "html" | "markdown" | "content")[];
+  formats?: ("text" | "json" | "json_v2" | "html" | "markdown")[];
   extraction_schema?: Record<string, unknown>;
+  safe_search?: boolean;
 }
 
 export interface SearchResponse {
@@ -364,7 +403,13 @@ export interface UnifiedScrapeResponse {
   screenshot_url?: string;
   pdf_url?: string;
   filtered_content?: Record<string, unknown>;
+  extraction_result?: Record<string, unknown>;
   content_truncated?: ContentTruncationInfo;
+  warning?: string;
+  domain_warning?: string;
+  domain_difficulty?: Record<string, unknown>;
+  tier_cap_warning?: Record<string, unknown>;
+  action_results?: Record<string, unknown>[];
   billing: BillingDetails;
   extraction_method?: string;
   version?: string;

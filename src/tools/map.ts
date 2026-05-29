@@ -44,6 +44,13 @@ export const mapSchema = z.object({
     .describe(
       "Sitemap handling: include (parse sitemaps + follow links), skip (links only), only (sitemap URLs only)",
     ),
+  sitemap_path: z
+    .string()
+    .optional()
+    .describe(
+      "Explicit path to the sitemap file (e.g., '/sitemap_index.xml'). " +
+        "Use when the sitemap is not at the standard /sitemap.xml location.",
+    ),
   include_metadata: z
     .boolean()
     .default(false)
@@ -82,6 +89,7 @@ export async function handleMap(
       exclude_patterns: params.exclude_patterns,
       search: params.search,
       sitemap: params.sitemap,
+      sitemap_path: params.sitemap_path,
       include_metadata: params.include_metadata,
       include_subdomains: params.include_subdomains,
       respect_robots: params.respect_robots,
