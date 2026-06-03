@@ -25,6 +25,19 @@ export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
     parts.push(`# ${response.title}\n`);
   }
 
+  // Schema-extracted data takes priority when extraction_schema was used.
+  // When filtered_content is present, content.json contains the same data (API mirrors it
+  // there per #19899) — skip the json branch below to avoid double-displaying it.
+  const hasFilteredContent = Boolean(response.filtered_content);
+  if (hasFilteredContent) {
+    parts.push(
+      "## Extracted Data\n\n" +
+        "```json\n" +
+        JSON.stringify(response.filtered_content, null, 2) +
+        "\n```",
+    );
+  }
+
   // Main content — prefer markdown format from multi-format response
   const content = response.content;
   if (typeof content === "object" && content !== null) {
@@ -35,7 +48,9 @@ export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
       parts.push(contentMap.text);
     } else if (contentMap.html) {
       parts.push("```html\n" + contentMap.html + "\n```");
-    } else if (contentMap.json) {
+    } else if (contentMap.json && !hasFilteredContent) {
+      // Skip content.json when filtered_content was already shown above —
+      // the API sets content.json = filtered_content when extraction_schema is used.
       parts.push(
         "```json\n" +
           (typeof contentMap.json === "string"
@@ -43,7 +58,12 @@ export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
             : JSON.stringify(contentMap.json, null, 2)) +
           "\n```",
       );
-    } else {
+    } else if (
+      !contentMap.markdown &&
+      !contentMap.text &&
+      !contentMap.html &&
+      !contentMap.json
+    ) {
       // Unknown structure — dump as JSON
       parts.push("```json\n" + JSON.stringify(content, null, 2) + "\n```");
     }
