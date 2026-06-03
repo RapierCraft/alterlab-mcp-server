@@ -25,6 +25,16 @@ export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
     parts.push(`# ${response.title}\n`);
   }
 
+  // Schema-extracted data takes priority when extraction_schema was used
+  if (response.filtered_content) {
+    parts.push(
+      "## Extracted Data\n\n" +
+        "```json\n" +
+        JSON.stringify(response.filtered_content, null, 2) +
+        "\n```",
+    );
+  }
+
   // Main content — prefer markdown format from multi-format response
   const content = response.content;
   if (typeof content === "object" && content !== null) {

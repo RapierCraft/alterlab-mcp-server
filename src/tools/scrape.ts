@@ -49,7 +49,7 @@ export const scrapeSchema = z.object({
     .describe(
       "JSON schema for structured extraction. " +
         "The API extracts fields matching this schema from the scraped page using LLM. " +
-        "Result is returned in extraction_result. " +
+        "Result is returned in content.json (add 'json' to formats) and in the top-level filtered_content field. " +
         'Example: { "title": "string", "price": "number", "in_stock": "boolean" }',
     ),
   extraction_model: z
@@ -188,7 +188,7 @@ export const scrapeDescription =
   "Use formats=['json_v2'] for a structured section tree (headings + content blocks). " +
   "Use formats=['rag'] for chunked text optimized for RAG pipelines. " +
   "Use formats=['content'] for AI/KB pipelines — returns body_markdown, content_hash, images, links. " +
-  "Use extraction_schema to extract structured fields from the page using LLM (returned in extraction_result). " +
+  "Use extraction_schema to extract structured fields from the page using LLM (add formats=['json'] to retrieve result in content.json, also available in filtered_content). " +
   "Supports authenticated scraping via session_id (stored session) or inline cookies. " +
   "Use scroll_to_load=true for infinite-scroll pages that lazy-load content. " +
   "Use location.country to scrape geo-targeted content.";
