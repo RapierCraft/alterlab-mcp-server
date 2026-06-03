@@ -45,6 +45,13 @@ export const extractSchema = z.object({
       "Natural language instructions for LLM extraction (e.g., 'Extract all product prices and ratings'). " +
         "Charged at LLM extraction rate when provided.",
     ),
+  extraction_model: z
+    .string()
+    .nullish()
+    .describe(
+      "Per-request LLM model override in provider-specific format (e.g. 'gpt-4o', 'claude-opus-4-5-20251101', 'llama3-70b-8192'). " +
+        "Overrides the model saved in your BYOK key settings for this request only.",
+    ),
   formats: z
     .array(z.enum(["text", "json", "json_v2", "html", "markdown", "rag"]))
     .default(["json"])
@@ -87,6 +94,7 @@ export async function handleExtract(
       extraction_profile: params.extraction_profile,
       extraction_schema: params.extraction_schema,
       extraction_prompt: params.extraction_prompt,
+      extraction_model: params.extraction_model ?? undefined,
       formats: params.formats,
       source_url: params.source_url,
       evidence: params.evidence,

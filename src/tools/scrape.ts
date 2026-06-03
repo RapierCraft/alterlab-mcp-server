@@ -33,7 +33,9 @@ export const scrapeSchema = z.object({
       "Scraping mode: auto (recommended), html, js (headless browser), pdf, or ocr",
     ),
   formats: z
-    .array(z.enum(["text", "json", "json_v2", "html", "markdown", "rag", "content"]))
+    .array(
+      z.enum(["text", "json", "json_v2", "html", "markdown", "rag", "content"]),
+    )
     .default(["markdown"])
     .describe(
       "Output formats. 'markdown' is best for LLM consumption. " +
@@ -49,6 +51,13 @@ export const scrapeSchema = z.object({
         "The API extracts fields matching this schema from the scraped page using LLM. " +
         "Result is returned in extraction_result. " +
         'Example: { "title": "string", "price": "number", "in_stock": "boolean" }',
+    ),
+  extraction_model: z
+    .string()
+    .nullish()
+    .describe(
+      "Per-request LLM model override in provider-specific format (e.g. 'gpt-4o', 'claude-opus-4-5-20251101', 'llama3-70b-8192'). " +
+        "Overrides the model saved in your BYOK key settings for this request only.",
     ),
   render_js: z
     .union([z.boolean(), z.literal("auto")])
@@ -204,6 +213,7 @@ export async function handleScrape(
       cookies: params.cookies,
       location: params.location,
       extraction_schema: params.extraction_schema,
+      extraction_model: params.extraction_model ?? undefined,
       advanced: {
         render_js: params.render_js,
         use_proxy: params.use_proxy,

@@ -51,6 +51,13 @@ export const crawlSchema = z.object({
     .record(z.unknown())
     .optional()
     .describe("JSON schema for structured extraction on each page"),
+  extraction_model: z
+    .string()
+    .nullish()
+    .describe(
+      "Per-request LLM model override in provider-specific format (e.g. 'gpt-4o', 'claude-opus-4-5-20251101', 'llama3-70b-8192'). " +
+        "Overrides the model saved in your BYOK key settings for this request only.",
+    ),
   render_js: z
     .union([z.boolean(), z.literal("auto")])
     .default(false)
@@ -105,6 +112,7 @@ export async function handleCrawl(
       sitemap: params.sitemap,
       formats: params.formats,
       extraction_schema: params.extraction_schema,
+      extraction_model: params.extraction_model ?? undefined,
       max_concurrency: params.max_concurrency,
       respect_robots: params.respect_robots,
       include_subdomains: params.include_subdomains,
