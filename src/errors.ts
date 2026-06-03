@@ -84,7 +84,7 @@ export function formatErrorResult(
           {
             type: "text",
             text:
-              `Insufficient credits${url}.\n\n` +
+              `Insufficient balance${url}: ${detail}\n\n` +
               "Suggested actions:\n" +
               "- Use `alterlab_check_balance` to see your current balance\n" +
               "- Add funds at: https://alterlab.io/dashboard/billing\n" +
