@@ -26,12 +26,21 @@ export interface UnifiedScrapeRequest {
   mode?: "auto" | "html" | "js" | "pdf" | "ocr";
   sync?: boolean;
   advanced?: AdvancedOptions;
-  formats?: ("text" | "json" | "json_v2" | "html" | "markdown" | "rag" | "content")[];
+  formats?: (
+    | "text"
+    | "json"
+    | "json_v2"
+    | "html"
+    | "markdown"
+    | "rag"
+    | "content"
+  )[];
   include_raw_html?: boolean;
   timeout?: number;
   max_response_bytes?: number;
   extraction_schema?: Record<string, unknown>;
   extraction_prompt?: string;
+  extraction_model?: string;
   extraction_profile?:
     | "auto"
     | "product"
@@ -69,6 +78,7 @@ export interface CrawlRequest {
   sitemap_path?: string;
   formats?: ("text" | "json" | "json_v2" | "html" | "markdown" | "content")[];
   extraction_schema?: Record<string, unknown>;
+  extraction_model?: string;
   max_concurrency?: number;
   respect_robots?: boolean;
   include_subdomains?: boolean;
@@ -175,7 +185,16 @@ export interface ExtractRequest {
     | "recipe"
     | "event";
   extraction_prompt?: string;
-  formats?: ("text" | "json" | "json_v2" | "html" | "markdown" | "rag" | "content")[];
+  extraction_model?: string;
+  formats?: (
+    | "text"
+    | "json"
+    | "json_v2"
+    | "html"
+    | "markdown"
+    | "rag"
+    | "content"
+  )[];
   source_url?: string;
   evidence?: boolean;
 }
@@ -196,7 +215,15 @@ export interface ExtractResponse {
 export interface BatchItemRequest {
   url: string;
   mode?: "auto" | "html" | "js" | "pdf" | "ocr";
-  formats?: ("text" | "json" | "json_v2" | "html" | "markdown" | "rag" | "content")[];
+  formats?: (
+    | "text"
+    | "json"
+    | "json_v2"
+    | "html"
+    | "markdown"
+    | "rag"
+    | "content"
+  )[];
   extraction_schema?: Record<string, unknown>;
   timeout?: number;
   wait_for?: string;
