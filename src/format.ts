@@ -2,6 +2,9 @@ import {
   TIER_NAMES,
   TIER_PRICES,
   type BalanceResponse,
+  type BetaFeatureListResponse,
+  type BetaFeatureMyResponse,
+  type BetaFeatureToggleResponse,
   type CostEstimate,
   type SessionCreateResponse,
   type SessionDetailResponse,
@@ -333,5 +336,82 @@ export function formatSessionRefreshResponse(
     `- Cookies: ${response.cookie_names.length}\n\n` +
     `Cookies have been rotated and failure counters reset. ` +
     `The session is ready for authenticated scraping.`
+  );
+}
+
+/**
+ * Format a beta features list response (all public features with opt-in state).
+ */
+export function formatBetaFeaturesListResponse(
+  response: BetaFeatureListResponse,
+): string {
+  if (response.features.length === 0) {
+    return (
+      "**No beta features available.**\n\n" +
+      "AlterLab has no public beta features at this time. " +
+      "Check back later for new capabilities in early access."
+    );
+  }
+
+  const parts: string[] = [`**Beta Features** (${response.total} total)\n`];
+
+  for (const feature of response.features) {
+    const statusLabel =
+      feature.status === "ga"
+        ? "GA"
+        : feature.status === "beta"
+          ? "Beta"
+          : "Hidden";
+    const optInLabel = feature.enabled ? "Opted in" : "Not opted in";
+
+    parts.push(
+      `- **${feature.name}** (\`${feature.slug}\`) [${statusLabel}]\n` +
+        `  ${feature.description}\n` +
+        `  Status: ${optInLabel}`,
+    );
+  }
+
+  parts.push(
+    "\nUse `alterlab_enable_beta_feature` or `alterlab_disable_beta_feature` to manage your opt-ins.",
+  );
+
+  return parts.join("\n");
+}
+
+/**
+ * Format a compact beta features list for the authenticated user (slugs only).
+ */
+export function formatBetaFeaturesMyResponse(
+  response: BetaFeatureMyResponse,
+): string {
+  if (response.features.length === 0) {
+    return (
+      "**Your Active Beta Features**: none\n\n" +
+      "You have no beta features enabled. " +
+      "Use `alterlab_list_beta_features` to see available features."
+    );
+  }
+
+  const slugList = response.features.map((slug) => `- \`${slug}\``).join("\n");
+
+  return (
+    `**Your Active Beta Features** (${response.features.length})\n\n` +
+    `${slugList}\n\n` +
+    `These features are active on your account (GA features + opted-in beta features).`
+  );
+}
+
+/**
+ * Format a beta feature enable/disable toggle response.
+ */
+export function formatBetaFeatureToggleResponse(
+  response: BetaFeatureToggleResponse,
+): string {
+  const action = response.enabled ? "Enabled" : "Disabled";
+  return (
+    `**Beta Feature ${action}**\n\n` +
+    `- Feature: \`${response.feature_slug}\`\n` +
+    `- Status: ${response.enabled ? "Active" : "Inactive"}\n\n` +
+    `${response.message}`
   );
 }
