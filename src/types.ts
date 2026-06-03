@@ -42,6 +42,7 @@ export interface UnifiedScrapeRequest {
   extraction_schema?: Record<string, unknown>;
   extraction_prompt?: string;
   extraction_model?: string;
+  extraction_provider?: "openai" | "anthropic" | "openrouter" | "groq";
   extraction_profile?:
     | "auto"
     | "product"
@@ -49,7 +50,9 @@ export interface UnifiedScrapeRequest {
     | "job_posting"
     | "faq"
     | "recipe"
-    | "event";
+    | "event"
+    | "ecommerce_homepage"
+    | "directory_listing";
   wait_for?: string;
   screenshot?: boolean;
   wait_until?: string;
