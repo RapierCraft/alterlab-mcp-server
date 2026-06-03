@@ -10,6 +10,27 @@ export const estimateSchema = z.object({
     .enum(["auto", "html", "js", "pdf", "ocr"])
     .default("auto")
     .describe("Scraping mode"),
+  formats: z
+    .array(
+      z.enum([
+        "text",
+        "json",
+        "json_v2",
+        "html",
+        "markdown",
+        "rag",
+        "content",
+        "raw",
+      ]),
+    )
+    .optional()
+    .describe(
+      "Output formats to include in the estimate. Affects cost prediction accuracy. " +
+        "'json_v2' returns a structured section tree. " +
+        "'rag' returns chunked text for retrieval-augmented generation. " +
+        "'content' returns body_markdown + content_hash + images + links. " +
+        "'raw' returns the response body byte-for-byte with no transformation.",
+    ),
   render_js: z
     .boolean()
     .default(false)
@@ -35,6 +56,7 @@ export async function handleEstimate(
     const estimate = await client.estimate({
       url: params.url,
       mode: params.mode,
+      formats: params.formats,
       advanced: {
         render_js: params.render_js,
         use_proxy: params.use_proxy,

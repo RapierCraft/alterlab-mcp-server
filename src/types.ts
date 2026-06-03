@@ -34,6 +34,7 @@ export interface UnifiedScrapeRequest {
     | "markdown"
     | "rag"
     | "content"
+    | "raw"
   )[];
   include_raw_html?: boolean;
   timeout?: number;
