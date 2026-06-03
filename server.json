@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-16/server.schema.json",
   "name": "io.alterlab/mcp-server",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Web scraping MCP server — scrape, extract structured data, screenshot any site with anti-bot bypass.",
   "repository": {
     "url": "https://github.com/RapierCraft/alterlab-mcp-server",
@@ -11,7 +11,7 @@
     {
       "registryType": "npm",
       "identifier": "alterlab-mcp-server",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "runtimeHint": "node",
       "transport": {
         "type": "stdio"
@@ -80,6 +80,22 @@
     {
       "name": "alterlab_delete_session",
       "description": "Delete an authenticated browser session."
+    },
+    {
+      "name": "alterlab_list_beta_features",
+      "description": "List all available beta features with their opt-in status."
+    },
+    {
+      "name": "alterlab_list_my_beta_features",
+      "description": "List beta features you have opted into."
+    },
+    {
+      "name": "alterlab_enable_beta_feature",
+      "description": "Enable a beta feature by its slug."
+    },
+    {
+      "name": "alterlab_disable_beta_feature",
+      "description": "Disable a beta feature by its slug."
     }
   ],
   "remotes": []
