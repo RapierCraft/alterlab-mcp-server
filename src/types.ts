@@ -187,9 +187,22 @@ export interface ExtractRequest {
     | "job_posting"
     | "faq"
     | "recipe"
-    | "event";
+    | "event"
+    | "ecommerce_homepage"
+    | "directory_listing";
+  extraction_template?:
+    | "auto"
+    | "product"
+    | "article"
+    | "job_posting"
+    | "faq"
+    | "recipe"
+    | "event"
+    | "ecommerce_homepage"
+    | "directory_listing";
   extraction_prompt?: string;
   extraction_model?: string;
+  extraction_provider?: "openai" | "anthropic" | "openrouter" | "groq";
   formats?: (
     | "text"
     | "json"
@@ -198,9 +211,12 @@ export interface ExtractRequest {
     | "markdown"
     | "rag"
     | "content"
+    | "raw"
   )[];
   source_url?: string;
   evidence?: boolean;
+  cache?: "auto" | "skip" | "only";
+  cache_ttl?: number;
 }
 
 export interface ExtractResponse {
