@@ -24,11 +24,31 @@ export const extractSchema = z.object({
       "faq",
       "recipe",
       "event",
+      "ecommerce_homepage",
+      "directory_listing",
     ])
     .optional()
     .describe(
       "Pre-defined extraction profile. 'product' extracts price/title/reviews, " +
-        "'article' extracts title/author/body, etc. 'auto' detects the page type",
+        "'article' extracts title/author/body, etc. 'auto' detects the page type. " +
+        "Mutually exclusive with extraction_template.",
+    ),
+  extraction_template: z
+    .enum([
+      "auto",
+      "product",
+      "article",
+      "job_posting",
+      "faq",
+      "recipe",
+      "event",
+      "ecommerce_homepage",
+      "directory_listing",
+    ])
+    .optional()
+    .describe(
+      "Shorthand alias for extraction_profile — selects the same pre-built schema template. " +
+        "Mutually exclusive with extraction_profile.",
     ),
   extraction_schema: z
     .record(z.unknown())
@@ -52,11 +72,31 @@ export const extractSchema = z.object({
       "Per-request LLM model override in provider-specific format (e.g. 'gpt-4o', 'claude-opus-4-5-20251101', 'llama3-70b-8192'). " +
         "Overrides the model saved in your BYOK key settings for this request only.",
     ),
+  extraction_provider: z
+    .enum(["openai", "anthropic", "openrouter", "groq"])
+    .optional()
+    .describe(
+      "LLM provider to use for extraction. Selects the matching BYOK key registered at " +
+        "/dashboard/settings/llm-keys. When omitted, the most recently used registered key is used.",
+    ),
   formats: z
-    .array(z.enum(["text", "json", "json_v2", "html", "markdown", "rag"]))
+    .array(
+      z.enum([
+        "text",
+        "json",
+        "json_v2",
+        "html",
+        "markdown",
+        "rag",
+        "content",
+        "raw",
+      ]),
+    )
     .default(["json"])
     .describe(
-      "Output formats for content transformation. 'json' is best for structured extraction.",
+      "Output formats for content transformation. 'json' is best for structured extraction. " +
+        "'content' returns filtered/cleaned content. " +
+        "'raw' returns the unprocessed response body.",
     ),
   source_url: z
     .string()
@@ -72,6 +112,25 @@ export const extractSchema = z.object({
     .describe(
       "Include field provenance/evidence for extracted fields (which part of the content each field came from)",
     ),
+  cache: z
+    .enum(["auto", "skip", "only"])
+    .default("auto")
+    .describe(
+      "Cache control for LLM extraction results. " +
+        "'auto': return cached result if available (default). " +
+        "'skip': bypass cache lookup, always call LLM (result is still stored). " +
+        "'only': return cached result or 404 if not cached — never calls the LLM.",
+    ),
+  cache_ttl: z
+    .number()
+    .int()
+    .min(1)
+    .max(86400)
+    .optional()
+    .describe(
+      "TTL for caching this extraction result, in seconds. " +
+        "Defaults to server setting (3600s). Max 86400s (24 hours).",
+    ),
 });
 
 export const extractDescription =
@@ -80,8 +139,9 @@ export const extractDescription =
   "and want to run AlterLab's extraction pipeline on it. " +
   "For scraping + extraction in one step, use alterlab_scrape with formats=['json'] instead. " +
   "Profiles: 'product' (price, title, reviews), 'article' (title, author, body), " +
-  "'job_posting', 'faq', 'recipe', 'event'. " +
-  "Returns JSON data. Use extraction_prompt for natural language extraction (LLM-powered).";
+  "'job_posting', 'faq', 'recipe', 'event', 'ecommerce_homepage', 'directory_listing'. " +
+  "Returns JSON data. Use extraction_prompt for natural language extraction (LLM-powered). " +
+  "Use cache='only' to retrieve a previously cached result without calling the LLM.";
 
 export async function handleExtract(
   client: AlterLabClient,
@@ -92,12 +152,16 @@ export async function handleExtract(
       content: params.content,
       content_type: params.content_type,
       extraction_profile: params.extraction_profile,
+      extraction_template: params.extraction_template,
       extraction_schema: params.extraction_schema,
       extraction_prompt: params.extraction_prompt,
       extraction_model: params.extraction_model ?? undefined,
+      extraction_provider: params.extraction_provider,
       formats: params.formats,
       source_url: params.source_url,
       evidence: params.evidence,
+      cache: params.cache,
+      cache_ttl: params.cache_ttl,
     });
 
     const text = formatStandaloneExtractResponse(response, params.source_url);
