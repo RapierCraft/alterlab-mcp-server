@@ -59,6 +59,44 @@ export const scrapeSchema = z.object({
       "Per-request LLM model override in provider-specific format (e.g. 'gpt-4o', 'claude-opus-4-5-20251101', 'llama3-70b-8192'). " +
         "Overrides the model saved in your BYOK key settings for this request only.",
     ),
+  extraction_provider: z
+    .enum(["openai", "anthropic", "openrouter", "groq"])
+    .optional()
+    .describe(
+      "LLM provider to use for extraction. Selects the matching BYOK key registered at " +
+        "/dashboard/settings/llm-keys. When omitted, the most recently used registered key " +
+        "is used automatically. Requires extraction_schema or extraction_prompt.",
+    ),
+  extraction_prompt: z
+    .string()
+    .max(2000)
+    .optional()
+    .describe(
+      "Natural language extraction instruction. Describes what fields to extract from the page. " +
+        "Mutually exclusive with extraction_schema. " +
+        'Example: "Extract the product name, price, and availability".',
+    ),
+  extraction_profile: z
+    .enum([
+      "auto",
+      "product",
+      "article",
+      "job_posting",
+      "faq",
+      "recipe",
+      "event",
+      "ecommerce_homepage",
+      "directory_listing",
+    ])
+    .optional()
+    .describe(
+      "Pre-built extraction schema template. " +
+        "auto: detect best template. product: e-commerce product details. " +
+        "article: news/blog article fields. job_posting: job listing fields. " +
+        "faq: FAQ entries. recipe: recipe ingredients and instructions. " +
+        "event: event details. ecommerce_homepage: homepage product listings. " +
+        "directory_listing: directory/listing page entries.",
+    ),
   render_js: z
     .union([z.boolean(), z.literal("auto")])
     .default(false)
@@ -189,6 +227,9 @@ export const scrapeDescription =
   "Use formats=['rag'] for chunked text optimized for RAG pipelines. " +
   "Use formats=['content'] for AI/KB pipelines — returns body_markdown, content_hash, images, links. " +
   "Use extraction_schema to extract structured fields from the page using LLM (add formats=['json'] to retrieve result in content.json, also available in filtered_content). " +
+  "Use extraction_prompt for natural language extraction instructions (mutually exclusive with extraction_schema). " +
+  "Use extraction_profile to select a pre-built extraction template (product, article, job_posting, etc.). " +
+  "Use extraction_provider to select a specific BYOK LLM provider (openai, anthropic, openrouter, groq). " +
   "Supports authenticated scraping via session_id (stored session) or inline cookies. " +
   "Use scroll_to_load=true for infinite-scroll pages that lazy-load content. " +
   "Use location.country to scrape geo-targeted content.";
@@ -213,7 +254,10 @@ export async function handleScrape(
       cookies: params.cookies,
       location: params.location,
       extraction_schema: params.extraction_schema,
+      extraction_prompt: params.extraction_prompt,
       extraction_model: params.extraction_model ?? undefined,
+      extraction_provider: params.extraction_provider,
+      extraction_profile: params.extraction_profile,
       advanced: {
         render_js: params.render_js,
         use_proxy: params.use_proxy,
