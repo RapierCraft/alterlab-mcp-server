@@ -77,6 +77,20 @@ import {
   deleteSessionDescription,
   handleDeleteSession,
 } from "./tools/sessions.js";
+import {
+  listBetaFeaturesSchema,
+  listBetaFeaturesDescription,
+  handleListBetaFeatures,
+  listMyBetaFeaturesSchema,
+  listMyBetaFeaturesDescription,
+  handleListMyBetaFeatures,
+  enableBetaFeatureSchema,
+  enableBetaFeatureDescription,
+  handleEnableBetaFeature,
+  disableBetaFeatureSchema,
+  disableBetaFeatureDescription,
+  handleDisableBetaFeature,
+} from "./tools/beta_features.js";
 
 function createServer(config: Config): McpServer {
   const client = new AlterLabClient(config);
@@ -214,6 +228,35 @@ function createServer(config: Config): McpServer {
     deleteSessionDescription,
     deleteSessionSchema.shape,
     (params) => handleDeleteSession(client, params as any),
+  );
+
+  // Beta feature management tools
+  server.tool(
+    "alterlab_list_beta_features",
+    listBetaFeaturesDescription,
+    listBetaFeaturesSchema.shape,
+    () => handleListBetaFeatures(client),
+  );
+
+  server.tool(
+    "alterlab_list_my_beta_features",
+    listMyBetaFeaturesDescription,
+    listMyBetaFeaturesSchema.shape,
+    () => handleListMyBetaFeatures(client),
+  );
+
+  server.tool(
+    "alterlab_enable_beta_feature",
+    enableBetaFeatureDescription,
+    enableBetaFeatureSchema.shape,
+    (params) => handleEnableBetaFeature(client, params as any),
+  );
+
+  server.tool(
+    "alterlab_disable_beta_feature",
+    disableBetaFeatureDescription,
+    disableBetaFeatureSchema.shape,
+    (params) => handleDisableBetaFeature(client, params as any),
   );
 
   return server;

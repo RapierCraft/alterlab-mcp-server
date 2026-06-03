@@ -5,6 +5,9 @@ import {
   type BatchRequest,
   type BatchResponse,
   type BatchStatusResponse,
+  type BetaFeatureListResponse,
+  type BetaFeatureMyResponse,
+  type BetaFeatureToggleResponse,
   type CostEstimate,
   type CrawlCancelResponse,
   type CrawlRequest,
@@ -224,6 +227,38 @@ export class AlterLabClient {
 
   async getBatchStatus(batchId: string): Promise<BatchStatusResponse> {
     return this.request<BatchStatusResponse>("GET", `/api/v1/batch/${batchId}`);
+  }
+
+  // ============================================================================
+  // Beta features methods
+  // ============================================================================
+
+  async listBetaFeatures(): Promise<BetaFeatureListResponse> {
+    return this.request<BetaFeatureListResponse>(
+      "GET",
+      "/api/v1/beta-features",
+    );
+  }
+
+  async listMyBetaFeatures(): Promise<BetaFeatureMyResponse> {
+    return this.request<BetaFeatureMyResponse>(
+      "GET",
+      "/api/v1/beta-features/my",
+    );
+  }
+
+  async enableBetaFeature(slug: string): Promise<BetaFeatureToggleResponse> {
+    return this.request<BetaFeatureToggleResponse>(
+      "POST",
+      `/api/v1/beta-features/${slug}/enable`,
+    );
+  }
+
+  async disableBetaFeature(slug: string): Promise<BetaFeatureToggleResponse> {
+    return this.request<BetaFeatureToggleResponse>(
+      "POST",
+      `/api/v1/beta-features/${slug}/disable`,
+    );
   }
 
   // ============================================================================

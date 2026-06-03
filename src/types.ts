@@ -415,6 +415,38 @@ export interface BalanceResponse {
 }
 
 // ============================================================================
+// Beta Features Types
+// ============================================================================
+
+export type BetaFeatureStatus = "hidden" | "beta" | "ga";
+
+export interface BetaFeatureListItem {
+  slug: string;
+  name: string;
+  description: string;
+  status: BetaFeatureStatus;
+  created_at: string;
+  /** True if the current user has opted in to this feature. */
+  enabled: boolean;
+}
+
+export interface BetaFeatureListResponse {
+  features: BetaFeatureListItem[];
+  total: number;
+}
+
+export interface BetaFeatureMyResponse {
+  /** Sorted list of feature slugs accessible to the requesting user (GA + opted-in beta). */
+  features: string[];
+}
+
+export interface BetaFeatureToggleResponse {
+  feature_slug: string;
+  enabled: boolean;
+  message: string;
+}
+
+// ============================================================================
 // Tier Info
 // ============================================================================
 
