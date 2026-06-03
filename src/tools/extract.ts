@@ -188,6 +188,10 @@ function formatStandaloneExtractResponse(
   const extractionMethod = String(r.extraction_method ?? "algorithmic");
   const modelUsed = r.model_used ? String(r.model_used) : null;
   const formats = r.formats as Record<string, unknown> | undefined;
+  const cacheHit = Boolean(r.cache_hit);
+  const extractionMetadata = r.extraction_metadata as
+    | Record<string, unknown>
+    | undefined;
 
   const parts: string[] = [];
 
@@ -220,13 +224,27 @@ function formatStandaloneExtractResponse(
     }
   }
 
-  parts.push(
-    "\n---\n" +
-      `Extract ID: \`${extractId}\` | ` +
-      `Method: ${extractionMethod}` +
-      (modelUsed ? ` (${modelUsed})` : "") +
-      ` | Credits: ${creditsUsed}`,
-  );
+  // Build footer with cache + model info from extraction_metadata when available
+  const provider = extractionMetadata?.provider ?? null;
+  const modelFromMeta = extractionMetadata?.model
+    ? String(extractionMetadata.model)
+    : null;
+  const effectiveModel = modelFromMeta ?? modelUsed;
+
+  const footerParts: string[] = [
+    `Extract ID: \`${extractId}\``,
+    `Method: ${extractionMethod}${effectiveModel ? ` (${effectiveModel})` : ""}`,
+  ];
+
+  if (cacheHit) {
+    footerParts.push("Cache: hit");
+  } else if (provider) {
+    footerParts.push(`Provider: ${provider}`);
+  }
+
+  footerParts.push(`Credits: ${creditsUsed}`);
+
+  parts.push("\n---\n" + footerParts.join(" | "));
 
   return parts.join("\n");
 }

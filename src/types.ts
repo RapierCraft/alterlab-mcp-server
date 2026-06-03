@@ -219,13 +219,51 @@ export interface ExtractRequest {
   cache_ttl?: number;
 }
 
+/**
+ * Per-call extraction transparency metadata returned in POST /v1/extract responses.
+ *
+ * Provides full context about how the extraction was performed: which LLM provider
+ * and model were used, token counts, AlterLab's invocation fee, latency, and whether
+ * a cached result was served. Token counts are null when no LLM was invoked.
+ */
+export interface ExtractionMetadata {
+  /** Extraction mode: 'byok' when BYOK key was used, 'algorithmic' otherwise. */
+  mode: string;
+  /** LLM provider used (openai, anthropic, openrouter, groq), or null if no LLM ran. */
+  provider?: string | null;
+  /** LLM model ID used for extraction, or null if no LLM ran. */
+  model?: string | null;
+  /** Prompt token count reported by the provider, or null if unavailable. */
+  input_tokens?: number | null;
+  /** Completion token count reported by the provider, or null if unavailable. */
+  output_tokens?: number | null;
+  /** AlterLab invocation fee charged in microcents (net of any refunds). */
+  cost_microcents: number;
+  /** Whether a cached extraction result was served. */
+  cached: boolean;
+  /** End-to-end extraction latency in milliseconds. */
+  latency_ms: number;
+}
+
 export interface ExtractResponse {
   extract_id: string;
   formats: Record<string, unknown>;
   credits_used: number;
   model_used?: string;
   extraction_method: string;
+  /** Extraction profile applied (if any). */
+  extraction_profile?: string;
   content_size_chars: number;
+  /**
+   * Full extraction context including provider, model, token usage,
+   * invocation cost, latency, and cache status. Populated on every call.
+   */
+  extraction_metadata?: ExtractionMetadata;
+  /**
+   * True when the LLM extraction result was served from Redis cache.
+   * When true, no LLM call was made and the BYOK invocation fee was not charged.
+   */
+  cache_hit?: boolean;
 }
 
 // ============================================================================
