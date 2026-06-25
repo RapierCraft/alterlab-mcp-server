@@ -186,6 +186,13 @@ export const scrapeSchema = z.object({
     .describe(
       "Remove cookie consent banners from HTML before content extraction (free, enabled by default)",
     ),
+  block_images: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Block image downloads during browser rendering. " +
+        "Reduces proxy bandwidth and speeds up scrapes. Only effective with render_js=true.",
+    ),
   location: z
     .object({
       country: z
@@ -266,6 +273,7 @@ export async function handleScrape(
         scroll_to_load: params.scroll_to_load,
         scroll_count: params.scroll_count,
         remove_cookie_banners: params.remove_cookie_banners,
+        block_images: params.block_images,
       },
     });
 
