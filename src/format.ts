@@ -79,14 +79,26 @@ export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
     ? `$${(response.billing.final_cost_microcents / 1_000_000).toFixed(6)}`
     : `${response.billing.total_credits} credits`;
 
+  const sourceUrl =
+    response.redirected && response.final_url
+      ? `${response.url} → ${response.final_url}`
+      : response.url;
+
   parts.push(
     "\n---\n" +
-      `Source: ${response.url} | ` +
+      `Source: ${sourceUrl} | ` +
       `Tier: ${tierName} (${tierPrice}/req) | ` +
       `Cost: ${cost} | ` +
       `Time: ${response.response_time_ms}ms` +
       (response.cached ? " | Cached" : ""),
   );
+
+  if (response.redirect_chain && response.redirect_chain.length > 0) {
+    const chain = response.redirect_chain
+      .map((hop) => `${hop.status_code} → ${hop.url}`)
+      .join("\n  ");
+    parts.push(`Redirect chain:\n  ${chain}`);
+  }
 
   if (response.billing.optimization_suggestion) {
     parts.push(`Tip: ${response.billing.optimization_suggestion}`);
@@ -99,6 +111,14 @@ export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
     parts.push(
       `Warning: Content truncated at ${truncatedMB} MB (original: ${originalMB} MB, reason: ${t.truncation_reason}). ` +
         `Increase max_response_bytes or use a more targeted selector to capture the full page.`,
+    );
+  }
+
+  if (response.quality_warning) {
+    const qw = response.quality_warning;
+    parts.push(
+      `Quality warning: ${qw.reason} (code: ${qw.code}, word_count: ${qw.word_count}). ` +
+        `Content was delivered but may contain anti-bot artifacts.`,
     );
   }
 

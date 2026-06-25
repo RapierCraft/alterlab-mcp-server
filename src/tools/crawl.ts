@@ -83,6 +83,13 @@ export const crawlSchema = z.object({
     .boolean()
     .default(false)
     .describe("Include links to subdomains during discovery"),
+  block_images: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Block image downloads during browser rendering on each crawled page. " +
+        "Reduces proxy bandwidth and speeds up crawls. Only effective with render_js=true.",
+    ),
   webhook_url: z
     .string()
     .url()
@@ -120,6 +127,7 @@ export async function handleCrawl(
       advanced: {
         render_js: params.render_js,
         use_proxy: params.use_proxy,
+        block_images: params.block_images,
       },
     });
 

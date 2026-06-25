@@ -134,7 +134,23 @@ export function formatErrorResult(
         ],
       };
 
-    case 504:
+    case 504: {
+      // The API returns credits_status and estimated_completion_s in the 504 body
+      let creditsNote = "";
+      let completionNote = "";
+      try {
+        if (detail) {
+          const parsed = JSON.parse(detail);
+          if (parsed.credits_status) {
+            creditsNote = `\nCredits: ${parsed.credits_status}`;
+          }
+          if (parsed.estimated_completion_s) {
+            completionNote = `\nEstimated completion: ~${parsed.estimated_completion_s}s`;
+          }
+        }
+      } catch {
+        // detail is plain text, not JSON — use default messaging
+      }
       return {
         isError: true,
         content: [
@@ -144,10 +160,13 @@ export function formatErrorResult(
               `Gateway timeout${url}.\n\n` +
               "The scraping job may still be running on the server.\n" +
               "Do NOT retry immediately — credits may have been consumed.\n" +
-              "Wait and check your balance before retrying.",
+              "Wait and check your balance before retrying." +
+              creditsNote +
+              completionNote,
           },
         ],
       };
+    }
 
     default:
       return {

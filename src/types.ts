@@ -12,6 +12,7 @@ export interface AdvancedOptions {
   remove_cookie_banners?: boolean;
   scroll_to_load?: boolean;
   scroll_count?: number;
+  block_images?: boolean;
 }
 
 export interface LocationOptions {
@@ -70,6 +71,7 @@ export interface CrawlAdvancedOptions {
   use_proxy?: boolean;
   wait_for?: string;
   timeout?: number;
+  block_images?: boolean;
 }
 
 export interface CrawlRequest {
@@ -431,9 +433,24 @@ export interface BillingDetails {
   final_cost_microcents?: number;
 }
 
+export interface QualityWarning {
+  code: string;
+  reason: string;
+  word_count: number;
+  content_size_bytes: number;
+}
+
+export interface RedirectHop {
+  url: string;
+  status_code: number;
+}
+
 export interface UnifiedScrapeResponse {
   job_id?: string;
   url: string;
+  final_url?: string;
+  redirected?: boolean;
+  redirect_chain?: RedirectHop[];
   status_code: number;
   content: string | Record<string, unknown>;
   title?: string;
@@ -450,6 +467,7 @@ export interface UnifiedScrapeResponse {
   pdf_url?: string;
   filtered_content?: Record<string, unknown>;
   content_truncated?: ContentTruncationInfo;
+  quality_warning?: QualityWarning;
   billing: BillingDetails;
   extraction_method?: string;
   version?: string;
