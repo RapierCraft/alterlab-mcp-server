@@ -221,13 +221,15 @@ export const scrapeSchema = z.object({
 });
 
 export const scrapeDescription =
-  "Scrape a URL and return its content as markdown, text, HTML, JSON, or structured sections. " +
-  "Automatically handles anti-bot protection with tier escalation. " +
+  "Get data from any website, bypass Cloudflare and anti-bot protection, scrape JavaScript-rendered pages, " +
+  "or fetch content from dynamic single-page apps. " +
+  "Turn any URL into clean, LLM-ready markdown — or get text, HTML, JSON, and structured sections. " +
+  "Automatically bypasses anti-bot protection (Cloudflare, Akamai, PerimeterX) with intelligent tier escalation. " +
   "Returns markdown by default — optimized for LLM context. " +
   "Supports GET (default) and POST/PUT/PATCH/DELETE/HEAD via the method parameter. " +
   "Use method='POST' with body for GraphQL APIs, REST endpoints, and form submissions. " +
   "For GraphQL: set body='{\"query\": \"{ ... }\"}' and method='POST'. " +
-  "Use render_js=true for JavaScript-heavy sites (React, Angular, SPAs). " +
+  "Use render_js=true to scrape dynamic pages, JavaScript-heavy sites (React, Angular, Vue, SPAs). " +
   "Use render_js='auto' for mixed sites to detect JS needs per-page (saves 30-60%). " +
   "Use use_proxy=true for geo-restricted or heavily protected sites. " +
   "Use formats=['json_v2'] for a structured section tree (headings + content blocks). " +

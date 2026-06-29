@@ -17,8 +17,8 @@ export const screenshotSchema = z.object({
 });
 
 export const screenshotDescription =
-  "Take a full-page screenshot of a URL. Returns the screenshot as a PNG image. " +
-  "Uses headless browser rendering. " +
+  "Take a screenshot of any website, capture a webpage as an image, or snapshot a URL visually. " +
+  "Returns a full-page PNG screenshot rendered with a headless browser. " +
   "Use wait_for to wait for a specific element before capturing.";
 
 export async function handleScreenshot(

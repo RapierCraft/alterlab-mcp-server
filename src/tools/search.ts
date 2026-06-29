@@ -66,7 +66,8 @@ export const searchSchema = z.object({
 });
 
 export const searchDescription =
-  "Execute a web search and return SERP results (URLs, titles, snippets). " +
+  "Search the web, find information online, look up any topic, or research a subject across the internet. " +
+  "Returns search results with URLs, titles, and snippets. " +
   "Uses AlterLab's own SERP engine with Google/Bing/DuckDuckGo multi-engine failover. " +
   "Costs $0.001 per search query. " +
   "Set scrape_results=true to also scrape each result page and get full content — " +
@@ -109,8 +110,7 @@ function formatSearchResponse(response: unknown, query: string): string {
   const resultsCount = Number(resp.results_count ?? results.length);
   const creditsUsed = Number(resp.credits_used ?? 0);
   const costBreakdown = resp.cost_breakdown as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
 
   const parts: string[] = [
     `**Search Results for: "${query}"**\n`,
@@ -157,8 +157,7 @@ function formatSearchResponse(response: unknown, query: string): string {
 
   // Featured snippet, knowledge panel, PAA
   const featuredSnippet = resp.featured_snippet as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   if (featuredSnippet) {
     parts.unshift(
       `**Featured Snippet**: ${String(featuredSnippet.content ?? "")}\n`,
