@@ -98,8 +98,9 @@ export const crawlSchema = z.object({
 });
 
 export const crawlDescription =
-  "Start an asynchronous crawl of an entire website. " +
-  "Discovers URLs via sitemap parsing and link extraction, then scrapes each page. " +
+  "Crawl an entire website for RAG, index all pages on a site, or discover every URL on a domain. " +
+  "Scrapes all pages and returns their content as markdown, text, or structured data. " +
+  "Discovers URLs via sitemap parsing and link extraction, then scrapes each page asynchronously. " +
   "Returns a crawl_id immediately — use alterlab_crawl_status to poll results. " +
   "Use include_patterns/exclude_patterns to scope the crawl to specific sections. " +
   "Use render_js='auto' for mixed sites to save 30-60% vs always rendering. " +

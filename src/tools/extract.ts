@@ -134,10 +134,10 @@ export const extractSchema = z.object({
 });
 
 export const extractDescription =
-  "Extract structured data from raw HTML, text, or markdown content WITHOUT scraping. " +
-  "Bring your own pre-fetched content. Use this when you already have the page content " +
-  "and want to run AlterLab's extraction pipeline on it. " +
-  "For scraping + extraction in one step, use alterlab_scrape with formats=['json'] instead. " +
+  "Extract product data, scrape prices, get structured data from any page content, " +
+  "or pull specific fields like names, emails, and ratings from HTML. " +
+  "Runs AlterLab's extraction pipeline on raw HTML, text, or markdown you already have — does NOT scrape a URL. " +
+  "For scraping + extraction in one step, use alterlab_scrape with extraction_schema instead. " +
   "Profiles: 'product' (price, title, reviews), 'article' (title, author, body), " +
   "'job_posting', 'faq', 'recipe', 'event', 'ecommerce_homepage', 'directory_listing'. " +
   "Returns JSON data. Use extraction_prompt for natural language extraction (LLM-powered). " +
@@ -190,8 +190,7 @@ function formatStandaloneExtractResponse(
   const formats = r.formats as Record<string, unknown> | undefined;
   const cacheHit = Boolean(r.cache_hit);
   const extractionMetadata = r.extraction_metadata as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
 
   const parts: string[] = [];
 
