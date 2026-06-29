@@ -44,9 +44,11 @@ export const estimateSchema = z.object({
 });
 
 export const estimateDescription =
-  "Estimate the cost of scraping a URL without actually scraping it. " +
-  "Returns the predicted tier, cost per request, and confidence level. " +
-  "Use this to check costs before running expensive scrapes.";
+  "Preview the cost of scraping a URL before committing — no credits charged. " +
+  "Returns the predicted anti-bot tier (1-4), estimated cost per request, and confidence level. " +
+  "Call this before scraping protected or unfamiliar sites to avoid surprises. " +
+  "Tier 1 (simple HTTP): $0.0001. Tier 4 (full browser + anti-bot bypass): $0.001. " +
+  "Use render_js and use_proxy flags to see how options affect cost.";
 
 export async function handleEstimate(
   client: AlterLabClient,

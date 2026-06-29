@@ -59,11 +59,12 @@ export const batchSchema = z.object({
 });
 
 export const batchDescription =
-  "Submit up to 100 URLs for parallel scraping in a single batch request. " +
+  "Scrape up to 100 URLs in parallel with a single request — much faster and more efficient than sequential alterlab_scrape calls. " +
+  "Each URL automatically gets anti-bot bypass protection (Cloudflare, DataDome, etc.) at its own tier level. " +
   "Returns a batch_id immediately — use alterlab_batch_status to poll results. " +
   "Each URL can have its own mode, formats, extraction_schema, and options. " +
   "Credits are pre-debited based on estimated cost; unused credits are refunded on completion. " +
-  "Use this instead of calling alterlab_scrape repeatedly for multiple URLs.";
+  "Use this whenever you need to scrape more than 2-3 URLs.";
 
 export async function handleBatch(
   client: AlterLabClient,
