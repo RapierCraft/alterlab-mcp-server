@@ -18,8 +18,10 @@ export const screenshotSchema = z.object({
 
 export const screenshotDescription =
   "Take a screenshot of any website, capture a webpage as an image, or snapshot a URL visually. " +
-  "Returns a full-page PNG screenshot rendered with a headless browser. " +
-  "Use wait_for to wait for a specific element before capturing.";
+  "Works on anti-bot protected sites (Cloudflare, DataDome, etc.) — uses the same bypass engine as alterlab_scrape. " +
+  "Returns a full-page PNG screenshot directly in the conversation — rendered with a real headless browser. " +
+  "Use wait_for to wait for a specific element before capturing. " +
+  "Use wait_until to control page load timing (networkidle, domcontentloaded, load).";
 
 export async function handleScreenshot(
   client: AlterLabClient,

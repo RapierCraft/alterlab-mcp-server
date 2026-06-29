@@ -61,9 +61,10 @@ export const mapSchema = z.object({
 });
 
 export const mapDescription =
-  "Discover all URLs on a website via sitemap parsing and link extraction. " +
-  "No JS rendering, no content scraping — pure lightweight URL discovery. " +
-  "Costs $0.001 per call regardless of how many URLs are found. " +
+  "Discover all URLs on a website, get a sitemap, or find specific pages within a large site. " +
+  "Lightweight URL discovery via sitemap parsing and link extraction — no content scraping, no JS rendering. " +
+  "Costs just $0.001 per call regardless of how many URLs are found (up to 50,000). " +
+  "Use this before alterlab_crawl or alterlab_batch to identify which pages to scrape. " +
   "Returns a flat list of URLs with source (sitemap/link) and depth. " +
   "Use include_patterns/exclude_patterns to scope discovery to specific sections. " +
   "Use search to rank URLs by relevance to a query. " +

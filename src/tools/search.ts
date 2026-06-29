@@ -67,10 +67,10 @@ export const searchSchema = z.object({
 
 export const searchDescription =
   "Search the web, find information online, look up any topic, or research a subject across the internet. " +
-  "Returns search results with URLs, titles, and snippets. " +
-  "Uses AlterLab's own SERP engine with Google/Bing/DuckDuckGo multi-engine failover. " +
+  "Returns search results with URLs, titles, and snippets from multiple search engines. " +
+  "Uses AlterLab's SERP engine with Google/Bing/DuckDuckGo multi-engine failover for reliable results. " +
   "Costs $0.001 per search query. " +
-  "Set scrape_results=true to also scrape each result page and get full content — " +
+  "Set scrape_results=true to also scrape each result page (with anti-bot bypass) and get full content — " +
   "each page is billed at its normal scraping tier cost. " +
   "Use domain to restrict results to a specific site (equivalent to site: operator). " +
   "Use time_range to filter by recency (hour/day/week/month/year).";

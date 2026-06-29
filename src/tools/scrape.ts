@@ -224,24 +224,24 @@ export const scrapeDescription =
   "Get data from any website, bypass Cloudflare and anti-bot protection, scrape JavaScript-rendered pages, " +
   "or fetch content from dynamic single-page apps. " +
   "Turn any URL into clean, LLM-ready markdown — or get text, HTML, JSON, and structured sections. " +
-  "Automatically bypasses anti-bot protection (Cloudflare, Akamai, PerimeterX) with intelligent tier escalation. " +
+  "Automatically bypasses anti-bot protection (Cloudflare, Akamai, DataDome, PerimeterX, hCaptcha) " +
+  "with intelligent 4-tier escalation — no manual configuration needed. " +
+  "Cost-efficient: starts at $0.0001/page for simple sites, auto-escalates only when protection is detected. " +
   "Returns markdown by default — optimized for LLM context. " +
   "Supports GET (default) and POST/PUT/PATCH/DELETE/HEAD via the method parameter. " +
   "Use method='POST' with body for GraphQL APIs, REST endpoints, and form submissions. " +
-  "For GraphQL: set body='{\"query\": \"{ ... }\"}' and method='POST'. " +
   "Use render_js=true to scrape dynamic pages, JavaScript-heavy sites (React, Angular, Vue, SPAs). " +
   "Use render_js='auto' for mixed sites to detect JS needs per-page (saves 30-60%). " +
   "Use use_proxy=true for geo-restricted or heavily protected sites. " +
   "Use formats=['json_v2'] for a structured section tree (headings + content blocks). " +
   "Use formats=['rag'] for chunked text optimized for RAG pipelines. " +
   "Use formats=['content'] for AI/KB pipelines — returns body_markdown, content_hash, images, links. " +
-  "Use extraction_schema to extract structured fields from the page using LLM (add formats=['json'] to retrieve result in content.json, also available in filtered_content). " +
-  "Use extraction_prompt for natural language extraction instructions (mutually exclusive with extraction_schema). " +
-  "Use extraction_profile to select a pre-built extraction template (product, article, job_posting, etc.). " +
-  "Use extraction_provider to select a specific BYOK LLM provider (openai, anthropic, openrouter, groq). " +
-  "Supports authenticated scraping via session_id (stored session) or inline cookies. " +
-  "Use scroll_to_load=true for infinite-scroll pages that lazy-load content. " +
-  "Use location.country to scrape geo-targeted content.";
+  "Use extraction_schema to extract structured fields from the page using LLM. " +
+  "Use extraction_prompt for natural language extraction instructions. " +
+  "Use extraction_profile for pre-built templates (product, article, job_posting, etc.). " +
+  "Supports authenticated scraping via session_id or inline cookies. " +
+  "Use scroll_to_load=true for infinite-scroll pages. " +
+  "Use location.country to scrape geo-targeted content from any region.";
 
 export async function handleScrape(
   client: AlterLabClient,

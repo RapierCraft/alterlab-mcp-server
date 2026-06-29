@@ -98,9 +98,10 @@ export const crawlSchema = z.object({
 });
 
 export const crawlDescription =
-  "Crawl an entire website for RAG, index all pages on a site, or discover every URL on a domain. " +
-  "Scrapes all pages and returns their content as markdown, text, or structured data. " +
+  "Crawl an entire website for RAG, index all pages on a site, or build a knowledge base from a domain. " +
+  "Automatically bypasses anti-bot protection on every page — works on Cloudflare-protected sites. " +
   "Discovers URLs via sitemap parsing and link extraction, then scrapes each page asynchronously. " +
+  "Returns content as clean markdown, text, or structured data. " +
   "Returns a crawl_id immediately — use alterlab_crawl_status to poll results. " +
   "Use include_patterns/exclude_patterns to scope the crawl to specific sections. " +
   "Use render_js='auto' for mixed sites to save 30-60% vs always rendering. " +
