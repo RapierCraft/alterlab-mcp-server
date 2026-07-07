@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { AlterLabClient } from "../client.js";
-import { formatScrapeResponse } from "../format.js";
+import { formatScrapeResponse, formatBalanceWarning } from "../format.js";
 
 export const simpleBatchSchema = z.object({
   urls: z
@@ -162,7 +162,10 @@ export async function handleSimpleBatch(
       (totalCost > 0 ? ` | Total cost: $${totalCost.toFixed(6)}` : ""),
   );
 
+  // Append balance warning if the last scrape left a low-balance signal
+  const balanceWarningSuffix = formatBalanceWarning(client.getLastBalanceWarning());
+
   return {
-    content: [{ type: "text", text: parts.join("\n") }],
+    content: [{ type: "text", text: parts.join("\n") + balanceWarningSuffix }],
   };
 }

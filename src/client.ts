@@ -2,6 +2,7 @@ import { type Config } from "./config.js";
 import { type ApiError } from "./errors.js";
 import {
   type BalanceResponse,
+  type BalanceWarning,
   type BatchRequest,
   type BatchResponse,
   type BatchStatusResponse,
@@ -43,11 +44,61 @@ export class AlterLabClient {
   private userAgent: string;
   private sourceHeader: string;
 
+  /**
+   * Stores the most recent balance warning parsed from response headers.
+   * Updated after every successful API call. Null when no warning headers
+   * were present in the last response, or before the first call.
+   */
+  private _lastBalanceWarning: BalanceWarning | null = null;
+
   constructor(config: Config) {
     this.apiKey = config.apiKey;
     this.apiUrl = config.apiUrl;
     this.userAgent = `alterlab-mcp-server/${VERSION}`;
     this.sourceHeader = `mcp-server/${VERSION}`;
+  }
+
+  /**
+   * Returns the balance warning from the most recent API response, or null
+   * if no warning headers were present. Tool handlers call this after each
+   * API request to append a proactive warning when balance is low.
+   */
+  getLastBalanceWarning(): BalanceWarning | null {
+    return this._lastBalanceWarning;
+  }
+
+  /**
+   * Parse X-AlterLab-Balance and X-AlterLab-Balance-Warning headers from an
+   * HTTP response and store the result. Both headers must be present and the
+   * warning level must be 'low', 'critical', or 'exhausted' — otherwise the
+   * stored warning is cleared to null (healthy balance = no warning).
+   */
+  private parseBalanceWarningHeaders(response: Response): void {
+    const balanceHeader = response.headers.get("X-AlterLab-Balance");
+    const warningHeader = response.headers.get("X-AlterLab-Balance-Warning");
+
+    if (!balanceHeader || !warningHeader) {
+      this._lastBalanceWarning = null;
+      return;
+    }
+
+    const level = warningHeader.trim().toLowerCase();
+    if (level !== "low" && level !== "critical" && level !== "exhausted") {
+      // Healthy balance or unknown level — clear warning
+      this._lastBalanceWarning = null;
+      return;
+    }
+
+    // Parse the dollar amount from the balance header (e.g. '$0.42')
+    const balanceStr = balanceHeader.trim();
+    const parsed = parseFloat(balanceStr.replace(/[^0-9.]/g, ""));
+    const balance_usd = isNaN(parsed) ? null : parsed;
+
+    this._lastBalanceWarning = {
+      level: level as BalanceWarning["level"],
+      balance: balanceStr,
+      balance_usd,
+    };
   }
 
   private async request<T>(
@@ -84,6 +135,10 @@ export class AlterLabClient {
     }
 
     if (!response.ok) {
+      // Still parse balance warning headers on error responses — the server may
+      // send them even on 402/4xx to alert about the balance state.
+      this.parseBalanceWarningHeaders(response);
+
       let detail: string | undefined;
       try {
         const errorBody = await response.json();
@@ -97,6 +152,9 @@ export class AlterLabClient {
       const apiError: ApiError = { status: response.status, detail };
       throw apiError;
     }
+
+    // Parse balance warning headers from successful responses
+    this.parseBalanceWarningHeaders(response);
 
     return (await response.json()) as T;
   }

@@ -7,9 +7,10 @@ import { formatBalanceResponse } from "../format.js";
 export const balanceSchema = z.object({});
 
 export const balanceDescription =
-  "Check your AlterLab account balance, remaining budget, and credit usage. " +
+  "Check your AlterLab account balance, status, and credit usage. " +
   "Call this before expensive operations (batch scrapes, large crawls) to verify sufficient funds. " +
-  "Returns current balance in dollars, total deposited, and total spent. " +
+  "Returns current balance in dollars, balance status (healthy/low/critical/exhausted), total deposited, and total spent. " +
+  "For a full spending breakdown by time window and top domains, use alterlab_get_usage instead. " +
   "No parameters required — uses your API key for identification.";
 
 export async function handleBalance(

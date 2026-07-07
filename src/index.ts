@@ -5,6 +5,8 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { AlterLabClient } from "./client.js";
 import { type Config } from "./config.js";
 import { ensureAuth } from "./auth.js";
+import { CONFIG_FILE_PATH } from "./config.js";
+import * as fs from "fs";
 import {
   scrapeSchema,
   scrapeDescription,
@@ -298,6 +300,37 @@ export function createSandboxServer(): McpServer {
 }
 
 async function main() {
+  const args = process.argv.slice(2);
+  // --setup: explicit re-authentication flag
+  // --auth oauth: OAuth-style alias (device flow IS the auth; "oauth" is treated as a sub-arg)
+  const isSetupMode =
+    args.includes("--setup") ||
+    (args.includes("--auth") && args.includes("oauth"));
+
+  if (isSetupMode) {
+    // --setup / --auth oauth: force re-authentication by removing the saved config.
+    // This lets users re-authenticate (e.g., after key revocation) without manually
+    // deleting ~/.alterlab/config.json.
+    if (fs.existsSync(CONFIG_FILE_PATH)) {
+      try {
+        fs.unlinkSync(CONFIG_FILE_PATH);
+        process.stderr.write(
+          "\n  (Removed saved API key — starting fresh authentication)\n",
+        );
+      } catch (err) {
+        process.stderr.write(
+          `\n  Warning: Could not remove saved config: ${String(err)}\n`,
+        );
+      }
+    }
+    // Re-run ensureAuth which will trigger the interactive flow
+    await ensureAuth();
+    process.stderr.write(
+      "\n  Setup complete. You can now add this server to your MCP client.\n\n",
+    );
+    process.exit(0);
+  }
+
   const config = await ensureAuth();
   const server = createServer(config);
 
