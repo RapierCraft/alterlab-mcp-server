@@ -26,7 +26,7 @@
 ### Claude Code
 
 ```bash
-claude mcp add alterlab -- npx -y alterlab-mcp-server
+claude mcp add alterlab -- npx -y alterlab-mcp-server@latest
 ```
 
 Then set your API key: `export ALTERLAB_API_KEY=sk_live_...` or add it to `.claude.json` (see [full setup](#install-in-claude-desktop--claude-code) below).
@@ -87,7 +87,7 @@ Add to your Claude config file (`~/.claude.json` for Claude Code, or Settings fo
   "mcpServers": {
     "alterlab": {
       "command": "npx",
-      "args": ["-y", "alterlab-mcp-server"],
+      "args": ["-y", "alterlab-mcp-server@latest"],
       "env": {
         "ALTERLAB_API_KEY": "sk_live_your_key_here"
       }
@@ -105,7 +105,7 @@ Add to `.cursor/mcp.json` in your project root:
   "mcpServers": {
     "alterlab": {
       "command": "npx",
-      "args": ["-y", "alterlab-mcp-server"],
+      "args": ["-y", "alterlab-mcp-server@latest"],
       "env": {
         "ALTERLAB_API_KEY": "sk_live_your_key_here"
       }
@@ -123,7 +123,7 @@ Add to Windsurf MCP settings (`~/.codeium/windsurf/mcp_config.json`):
   "mcpServers": {
     "alterlab": {
       "command": "npx",
-      "args": ["-y", "alterlab-mcp-server"],
+      "args": ["-y", "alterlab-mcp-server@latest"],
       "env": {
         "ALTERLAB_API_KEY": "sk_live_your_key_here"
       }
@@ -385,7 +385,7 @@ No subscriptions. No monthly minimums. Add balance and use it whenever you need 
 
 ### How do I add web scraping to Claude, Cursor, or Windsurf?
 
-Install the AlterLab MCP server. For Claude Code, run `claude mcp add alterlab -- npx -y alterlab-mcp-server` and set your `ALTERLAB_API_KEY`. For Claude Desktop, Cursor, or Windsurf, add the JSON config block to your MCP settings file. Once configured, your AI assistant can scrape any URL, extract structured data, and take screenshots directly in conversation.
+Install the AlterLab MCP server. For Claude Code, run `claude mcp add alterlab -- npx -y alterlab-mcp-server@latest` and set your `ALTERLAB_API_KEY`. For Claude Desktop, Cursor, or Windsurf, add the JSON config block to your MCP settings file. Once configured, your AI assistant can scrape any URL, extract structured data, and take screenshots directly in conversation.
 
 ### Can Claude scrape websites that are behind Cloudflare or anti-bot protection?
 
@@ -393,7 +393,7 @@ Yes. AlterLab automatically handles Cloudflare, DataDome, PerimeterX, Akamai, an
 
 ### What is an MCP server and how does it work with Claude?
 
-MCP (Model Context Protocol) is Anthropic's open standard for connecting AI assistants to external tools and data sources. An MCP server is a small program that exposes tools &mdash; like web scraping &mdash; that Claude, Cursor, or Windsurf can call during a conversation. The AlterLab MCP server gives your AI assistant 5 tools: scrape, extract, screenshot, estimate cost, and check balance.
+MCP (Model Context Protocol) is Anthropic's open standard for connecting AI assistants to external tools and data sources. An MCP server is a small program that exposes tools &mdash; like web scraping &mdash; that Claude, Cursor, or Windsurf can call during a conversation. The AlterLab MCP server gives your AI assistant 23 tools: scrape, extract, screenshot, crawl, search, map, batch scraping, session management, beta features, and more.
 
 ### How is AlterLab different from Firecrawl, ScrapingBee, or Apify MCP servers?
 
@@ -421,7 +421,7 @@ Free-tier accounts have rate limits. Adding any balance removes rate limits. The
 
 ### Can I use this MCP server for large-scale scraping?
 
-Yes. The MCP server processes one request at a time through the conversation interface, but you can build agentic workflows that scrape many URLs sequentially. For batch processing, use the AlterLab API directly or the [n8n integration](https://www.npmjs.com/package/n8n-nodes-alterlab).
+Yes. For parallel scraping, use `alterlab_batch` to scrape up to 100 URLs in a single request — much faster than sequential calls. For crawling entire domains, use `alterlab_crawl`. You can also build agentic workflows that scrape many URLs sequentially, or use the [n8n integration](https://www.npmjs.com/package/n8n-nodes-alterlab) for workflow automation.
 
 ---
 
