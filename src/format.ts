@@ -108,10 +108,21 @@ export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
     const t = response.content_truncated;
     const truncatedMB = (t.truncated_at_bytes / 1_048_576).toFixed(1);
     const originalMB = (t.original_size_bytes / 1_048_576).toFixed(1);
-    parts.push(
-      `Warning: Content truncated at ${truncatedMB} MB (original: ${originalMB} MB, reason: ${t.truncation_reason}). ` +
-        `Increase max_response_bytes or use a more targeted selector to capture the full page.`,
-    );
+    const truncationPrefix = `Warning: Content truncated at ${truncatedMB} MB (original: ${originalMB} MB, reason: ${t.truncation_reason}). `;
+    if (t.truncation_reason === "response_body_cap") {
+      parts.push(
+        truncationPrefix +
+          `Increase max_response_bytes or use a more targeted selector to capture the full page.`,
+      );
+    } else {
+      // readability_input_cap or readability_output_cap — server-side caps that
+      // max_response_bytes cannot affect. Advising users to increase it would be misleading.
+      parts.push(
+        truncationPrefix +
+          `This is a server-side readability cap and cannot be raised via max_response_bytes. ` +
+          `Use a more targeted CSS selector to reduce the content region size.`,
+      );
+    }
   }
 
   if (response.quality_warning) {
