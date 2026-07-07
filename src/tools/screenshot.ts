@@ -3,6 +3,7 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { AlterLabClient } from "../client.js";
 import { type ApiError, formatErrorResult } from "../errors.js";
 import { TIER_NAMES } from "../types.js";
+import { formatBalanceWarning } from "../format.js";
 
 export const screenshotSchema = z.object({
   url: z.string().url().describe("URL to take a screenshot of"),
@@ -67,6 +68,7 @@ export async function handleScreenshot(
     const tier = response.billing.tier_used;
     const tierName = TIER_NAMES[tier] || tier;
 
+    const balanceWarningSuffix = formatBalanceWarning(client.getLastBalanceWarning());
     return {
       content: [
         {
@@ -78,7 +80,8 @@ export async function handleScreenshot(
           type: "text" as const,
           text:
             `Screenshot of ${response.url}\n` +
-            `Tier: ${tierName} | Time: ${response.response_time_ms}ms`,
+            `Tier: ${tierName} | Time: ${response.response_time_ms}ms` +
+            balanceWarningSuffix,
         },
       ],
     };

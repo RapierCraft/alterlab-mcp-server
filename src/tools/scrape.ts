@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { AlterLabClient } from "../client.js";
 import { type ApiError, formatErrorResult } from "../errors.js";
-import { formatScrapeResponse, formatEstimateInline } from "../format.js";
+import { formatScrapeResponse, formatEstimateInline, formatBalanceWarning } from "../format.js";
 
 export const scrapeSchema = z.object({
   url: z.string().url().describe("URL to scrape"),
@@ -369,8 +369,9 @@ export async function handleScrape(
       },
     });
 
+    const balanceWarningSuffix = formatBalanceWarning(client.getLastBalanceWarning());
     return {
-      content: [{ type: "text", text: estimatePrefix + formatScrapeResponse(response) }],
+      content: [{ type: "text", text: estimatePrefix + formatScrapeResponse(response) + balanceWarningSuffix }],
     };
   } catch (error) {
     if (isApiError(error)) {

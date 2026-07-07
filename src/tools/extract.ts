@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { AlterLabClient } from "../client.js";
 import { type ApiError, formatErrorResult } from "../errors.js";
+import { formatBalanceWarning } from "../format.js";
 
 export const extractSchema = z.object({
   content: z
@@ -165,7 +166,8 @@ export async function handleExtract(
     });
 
     const text = formatStandaloneExtractResponse(response, params.source_url);
-    return { content: [{ type: "text", text }] };
+    const balanceWarningSuffix = formatBalanceWarning(client.getLastBalanceWarning());
+    return { content: [{ type: "text", text: text + balanceWarningSuffix }] };
   } catch (error) {
     if (isApiError(error)) {
       return formatErrorResult(error, {

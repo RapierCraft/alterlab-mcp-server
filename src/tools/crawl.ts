@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { AlterLabClient } from "../client.js";
 import { type ApiError, formatErrorResult } from "../errors.js";
+import { formatBalanceWarning } from "../format.js";
 
 // ============================================================================
 // Start Crawl
@@ -143,7 +144,8 @@ export async function handleCrawl(
       `Use \`alterlab_crawl_status\` with crawl_id \`${response.crawl_id}\` to poll for results.\n` +
       `Crawls run asynchronously — check back after a few minutes for large sites.`;
 
-    return { content: [{ type: "text", text }] };
+    const balanceWarningSuffix = formatBalanceWarning(client.getLastBalanceWarning());
+    return { content: [{ type: "text", text: text + balanceWarningSuffix }] };
   } catch (error) {
     if (isApiError(error)) {
       return formatErrorResult(error, { url: params.url });
