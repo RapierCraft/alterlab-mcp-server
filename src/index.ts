@@ -97,6 +97,11 @@ import {
   usageDescription,
   handleUsage,
 } from "./tools/usage.js";
+import {
+  simpleBatchSchema,
+  simpleBatchDescription,
+  handleSimpleBatch,
+} from "./tools/simple_batch.js";
 
 function createServer(config: Config): McpServer {
   const client = new AlterLabClient(config);
@@ -182,6 +187,13 @@ function createServer(config: Config): McpServer {
   );
 
   // Batch tools
+  server.tool(
+    "alterlab_batch_scrape",
+    simpleBatchDescription,
+    simpleBatchSchema.shape,
+    (params) => handleSimpleBatch(client, params as any),
+  );
+
   server.tool("alterlab_batch", batchDescription, batchSchema.shape, (params) =>
     handleBatch(client, params as any),
   );
