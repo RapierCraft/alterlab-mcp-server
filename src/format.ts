@@ -71,6 +71,28 @@ export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
     parts.push(content);
   }
 
+  // LLM extraction result (from extraction_schema or extraction_prompt)
+  if (response.extraction_result && !hasFilteredContent) {
+    parts.push(
+      "\n**Extraction Result**\n```json\n" +
+        JSON.stringify(response.extraction_result, null, 2) +
+        "\n```",
+    );
+  }
+
+  // Browser action results (from advanced.actions)
+  if (response.action_results && response.action_results.length > 0) {
+    const actionSummary = response.action_results
+      .map((a: Record<string, unknown>, i: number) => {
+        const status = a.success ? "ok" : "failed";
+        const type = String(a.type ?? "action");
+        const result = a.result ? ` → ${String(a.result)}` : "";
+        return `  ${i + 1}. [${status}] ${type}${result}`;
+      })
+      .join("\n");
+    parts.push(`\n**Action Results**\n${actionSummary}`);
+  }
+
   // Metadata footer
   const tier = response.billing.tier_used;
   const tierName = TIER_NAMES[tier] || tier;
@@ -90,7 +112,8 @@ export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
       `Tier: ${tierName} (${tierPrice}/req) | ` +
       `Cost: ${cost} | ` +
       `Time: ${response.response_time_ms}ms` +
-      (response.cached ? " | Cached" : ""),
+      (response.cached ? " | Cached" : "") +
+      (response.billing.byop_applied ? " | BYOP" : ""),
   );
 
   if (response.redirect_chain && response.redirect_chain.length > 0) {
@@ -100,18 +123,78 @@ export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
     parts.push(`Redirect chain:\n  ${chain}`);
   }
 
+  if (
+    response.billing.escalations &&
+    response.billing.escalations.length > 1
+  ) {
+    const escalationSummary = response.billing.escalations
+      .map((e) => {
+        const tierLabel = TIER_NAMES[e.tier] || e.tier;
+        const durationLabel = e.duration_ms ? ` (${e.duration_ms}ms)` : "";
+        return `${tierLabel}: ${e.result}${durationLabel}`;
+      })
+      .join(" → ");
+    parts.push(`Escalation path: ${escalationSummary}`);
+  }
+
   if (response.billing.optimization_suggestion) {
     parts.push(`Tip: ${response.billing.optimization_suggestion}`);
+  }
+
+  // API warning messages — surface all warning variants
+  if (response.warning) {
+    parts.push(`Warning: ${response.warning}`);
+  }
+
+  if (response.domain_warning) {
+    let detail = "";
+    if (response.domain_difficulty) {
+      const d = response.domain_difficulty as Record<string, unknown>;
+      const rate =
+        d.success_rate !== undefined
+          ? ` (success rate: ${(Number(d.success_rate) * 100).toFixed(0)}%)`
+          : "";
+      detail = rate;
+    }
+    parts.push(`Domain Warning: ${response.domain_warning}${detail}`);
+  }
+
+  if (response.tier_cap_warning) {
+    const w = response.tier_cap_warning as Record<string, unknown>;
+    const domainMin =
+      w.domain_min_tier !== undefined
+        ? ` Domain requires tier ${w.domain_min_tier}.`
+        : "";
+    if (w.your_max_tier !== undefined) {
+      parts.push(
+        `Tier Cap Warning: Your max_tier (${w.your_max_tier}) is below the domain minimum.${domainMin}`,
+      );
+    } else if (w.your_force_tier !== undefined) {
+      parts.push(
+        `Tier Cap Warning: Your force_tier (${w.your_force_tier}) is below the domain minimum.${domainMin}`,
+      );
+    }
   }
 
   if (response.content_truncated) {
     const t = response.content_truncated;
     const truncatedMB = (t.truncated_at_bytes / 1_048_576).toFixed(1);
     const originalMB = (t.original_size_bytes / 1_048_576).toFixed(1);
-    parts.push(
-      `Warning: Content truncated at ${truncatedMB} MB (original: ${originalMB} MB, reason: ${t.truncation_reason}). ` +
-        `Increase max_response_bytes or use a more targeted selector to capture the full page.`,
-    );
+    const truncationPrefix = `Warning: Content truncated at ${truncatedMB} MB (original: ${originalMB} MB, reason: ${t.truncation_reason}). `;
+    if (t.truncation_reason === "response_body_cap") {
+      parts.push(
+        truncationPrefix +
+          `Increase max_response_bytes or use a more targeted selector to capture the full page.`,
+      );
+    } else {
+      // readability_input_cap or readability_output_cap — server-side caps that
+      // max_response_bytes cannot affect. Advising users to increase it would be misleading.
+      parts.push(
+        truncationPrefix +
+          `This is a server-side readability cap and cannot be raised via max_response_bytes. ` +
+          `Use a more targeted CSS selector to reduce the content region size.`,
+      );
+    }
   }
 
   if (response.quality_warning) {

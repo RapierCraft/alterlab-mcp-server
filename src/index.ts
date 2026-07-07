@@ -3,7 +3,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { AlterLabClient } from "./client.js";
-import { loadConfig, type Config } from "./config.js";
+import { type Config } from "./config.js";
+import { ensureAuth } from "./auth.js";
 import {
   scrapeSchema,
   scrapeDescription,
@@ -91,6 +92,11 @@ import {
   disableBetaFeatureDescription,
   handleDisableBetaFeature,
 } from "./tools/beta_features.js";
+import {
+  usageSchema,
+  usageDescription,
+  handleUsage,
+} from "./tools/usage.js";
 
 function createServer(config: Config): McpServer {
   const client = new AlterLabClient(config);
@@ -134,6 +140,13 @@ function createServer(config: Config): McpServer {
     balanceDescription,
     balanceSchema.shape,
     () => handleBalance(client),
+  );
+
+  server.tool(
+    "alterlab_get_usage",
+    usageDescription,
+    usageSchema.shape,
+    () => handleUsage(client),
   );
 
   // Crawl tools
@@ -273,7 +286,7 @@ export function createSandboxServer(): McpServer {
 }
 
 async function main() {
-  const config = loadConfig();
+  const config = await ensureAuth();
   const server = createServer(config);
 
   const transport = new StdioServerTransport();

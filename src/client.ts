@@ -29,22 +29,25 @@ import {
   type SessionValidateResponse,
   type UnifiedScrapeRequest,
   type UnifiedScrapeResponse,
+  type UsageResponse,
 } from "./types.js";
 
 // Read version from package.json at build time is complex with ESM,
 // so we hardcode it and keep in sync with package.json.
-const VERSION = "1.1.0";
+const VERSION = "1.7.1";
 const MAX_RETRIES = 2;
 
 export class AlterLabClient {
   private apiKey: string;
   private apiUrl: string;
   private userAgent: string;
+  private sourceHeader: string;
 
   constructor(config: Config) {
     this.apiKey = config.apiKey;
     this.apiUrl = config.apiUrl;
     this.userAgent = `alterlab-mcp-server/${VERSION}`;
+    this.sourceHeader = `mcp-server/${VERSION}`;
   }
 
   private async request<T>(
@@ -57,6 +60,7 @@ export class AlterLabClient {
     const headers: Record<string, string> = {
       "X-API-Key": this.apiKey,
       "User-Agent": this.userAgent,
+      "X-AlterLab-Source": this.sourceHeader,
       "Content-Type": "application/json",
     };
 
@@ -115,6 +119,10 @@ export class AlterLabClient {
 
   async getBalance(): Promise<BalanceResponse> {
     return this.request<BalanceResponse>("GET", "/api/v1/billing/balance");
+  }
+
+  async getUsage(): Promise<UsageResponse> {
+    return this.request<UsageResponse>("GET", "/api/v1/billing/usage");
   }
 
   async listSessions(): Promise<SessionListResponse> {
@@ -275,6 +283,7 @@ export class AlterLabClient {
       headers: {
         "X-API-Key": this.apiKey,
         "User-Agent": this.userAgent,
+        "X-AlterLab-Source": this.sourceHeader,
       },
     });
 

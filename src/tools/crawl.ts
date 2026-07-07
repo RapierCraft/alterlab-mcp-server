@@ -7,6 +7,33 @@ import { type ApiError, formatErrorResult } from "../errors.js";
 // Start Crawl
 // ============================================================================
 
+const crawlTierEnum = z.enum(["1", "2", "3", "3.5", "4"]);
+
+const crawlCostControlsSchema = z
+  .object({
+    max_credits: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe("Hard spending cap in credits for the entire crawl"),
+    max_tier: crawlTierEnum
+      .optional()
+      .describe(
+        "Maximum tier to use for page scrapes " +
+          "(1=curl $0.0002, 2=http $0.0003, 3=stealth $0.002, 3.5=lightjs $0.0025, 4=browser $0.004)",
+      ),
+    force_tier: crawlTierEnum
+      .optional()
+      .describe(
+        "Force all pages to use this exact tier, bypassing per-page escalation",
+      ),
+  })
+  .optional()
+  .describe(
+    "Cost controls for the entire crawl — cap total spend or pin the scraping tier",
+  );
+
 export const crawlSchema = z.object({
   url: z.string().url().describe("Start URL for the crawl"),
   max_pages: z
@@ -43,6 +70,13 @@ export const crawlSchema = z.object({
     .describe(
       "Sitemap mode: include (default), skip (link extraction only), only (sitemap URLs only)",
     ),
+  sitemap_path: z
+    .string()
+    .optional()
+    .describe(
+      "Explicit path to the sitemap file (e.g., '/sitemap_index.xml'). " +
+        "Use when the sitemap is not at the standard /sitemap.xml location.",
+    ),
   formats: z
     .array(z.enum(["text", "json", "json_v2", "html", "markdown"]))
     .optional()
@@ -51,6 +85,20 @@ export const crawlSchema = z.object({
     .record(z.unknown())
     .optional()
     .describe("JSON schema for structured extraction on each page"),
+  extraction_profile: z
+    .enum(["auto", "product", "article", "job_posting", "faq", "recipe", "event"])
+    .optional()
+    .describe(
+      "Pre-defined extraction profile applied to every crawled page. " +
+        "'auto' detects the page type automatically.",
+    ),
+  headers: z
+    .record(z.string(), z.string())
+    .optional()
+    .describe(
+      "Custom HTTP headers injected into every page request during the crawl " +
+        '(e.g., {"Authorization": "Bearer token"}). Maximum 50 headers.',
+    ),
   extraction_model: z
     .string()
     .nullish()
@@ -90,11 +138,25 @@ export const crawlSchema = z.object({
       "Block image downloads during browser rendering on each crawled page. " +
         "Reduces proxy bandwidth and speeds up crawls. Only effective with render_js=true.",
     ),
+  wait_for: z
+    .string()
+    .optional()
+    .describe(
+      "CSS selector to wait for before extracting each page (e.g., '#main-content'). " +
+        "Applied to all pages in the crawl.",
+    ),
+  timeout: z
+    .number()
+    .min(1)
+    .max(300)
+    .optional()
+    .describe("Per-page request timeout in seconds (1-300)"),
   webhook_url: z
     .string()
     .url()
     .optional()
     .describe("Webhook URL to notify on crawl completion"),
+  cost_controls: crawlCostControlsSchema,
 });
 
 export const crawlDescription =
@@ -105,7 +167,10 @@ export const crawlDescription =
   "Returns a crawl_id immediately — use alterlab_crawl_status to poll results. " +
   "Use include_patterns/exclude_patterns to scope the crawl to specific sections. " +
   "Use render_js='auto' for mixed sites to save 30-60% vs always rendering. " +
-  "Supports extraction_schema to extract structured data from every page.";
+  "Supports extraction_schema or extraction_profile to extract structured data from every page. " +
+  "Use cost_controls to cap total credits or pin the scraping tier for all pages. " +
+  "Use sitemap_path to specify a non-standard sitemap location. " +
+  "Use headers to inject custom HTTP headers (e.g., Authorization) into every page request.";
 
 export async function handleCrawl(
   client: AlterLabClient,
@@ -119,17 +184,23 @@ export async function handleCrawl(
       include_patterns: params.include_patterns,
       exclude_patterns: params.exclude_patterns,
       sitemap: params.sitemap,
+      sitemap_path: params.sitemap_path,
       formats: params.formats,
       extraction_schema: params.extraction_schema,
+      extraction_profile: params.extraction_profile,
+      headers: params.headers,
       extraction_model: params.extraction_model ?? undefined,
       max_concurrency: params.max_concurrency,
       respect_robots: params.respect_robots,
       include_subdomains: params.include_subdomains,
       webhook_url: params.webhook_url,
+      cost_controls: params.cost_controls,
       advanced: {
         render_js: params.render_js,
         use_proxy: params.use_proxy,
         block_images: params.block_images,
+        wait_for: params.wait_for,
+        timeout: params.timeout,
       },
     });
 
