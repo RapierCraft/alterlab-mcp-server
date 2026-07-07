@@ -14,7 +14,7 @@
 import * as https from "https";
 import * as http from "http";
 import * as readline from "readline";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import {
   type Config,
   getApiUrl,
@@ -108,16 +108,34 @@ function postJson(
 // ---------------------------------------------------------------------------
 
 function openBrowser(url: string): void {
-  const platform = process.platform;
-  let cmd: string;
-  if (platform === "win32") {
-    cmd = `start "" "${url}"`;
-  } else if (platform === "darwin") {
-    cmd = `open "${url}"`;
-  } else {
-    cmd = `xdg-open "${url}"`;
+  // Validate URL before passing to shell — accept only http(s) schemes to
+  // prevent shell injection if the device server returns a malicious URL.
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    process.stderr.write(`  (Could not parse browser URL — copy and open manually)\n`);
+    return;
   }
-  exec(cmd, () => {
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    process.stderr.write(`  (Unexpected URL scheme '${parsed.protocol}' — skipping auto-open)\n`);
+    return;
+  }
+
+  // Use execFile (not exec) to avoid shell interpretation of the URL.
+  // The URL is passed as a standalone argument — no shell quoting needed.
+  const platform = process.platform;
+  let bin: string;
+  if (platform === "win32") {
+    bin = "cmd";
+  } else if (platform === "darwin") {
+    bin = "open";
+  } else {
+    bin = "xdg-open";
+  }
+
+  const args = platform === "win32" ? ["/c", "start", "", url] : [url];
+  execFile(bin, args, () => {
     // Ignore errors — if the browser doesn't open, the user can copy the URL
   });
 }
