@@ -97,6 +97,15 @@ export const scrapeSchema = z.object({
         "event: event details. ecommerce_homepage: homepage product listings. " +
         "directory_listing: directory/listing page entries.",
     ),
+  template: z
+    .string()
+    .optional()
+    .describe(
+      "Named extraction template to apply to the scrape result. " +
+        "Accepts standard template names (e.g. 'product', 'article', 'job_posting') " +
+        "or a custom template name registered in your account. " +
+        "When provided, routes the request through template-based extraction.",
+    ),
   render_js: z
     .union([z.boolean(), z.literal("auto")])
     .default(false)
@@ -311,6 +320,7 @@ export async function handleScrape(
       extraction_model: params.extraction_model ?? undefined,
       extraction_provider: params.extraction_provider,
       extraction_profile: params.extraction_profile,
+      template: params.template,
       prefer_cost: params.prefer_cost,
       prefer_speed: params.prefer_speed,
       fail_fast: params.fail_fast,
