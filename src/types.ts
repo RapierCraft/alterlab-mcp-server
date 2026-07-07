@@ -54,6 +54,7 @@ export interface UnifiedScrapeRequest {
     | "event"
     | "ecommerce_homepage"
     | "directory_listing";
+  template?: string;
   wait_for?: string;
   screenshot?: boolean;
   wait_until?: string;
