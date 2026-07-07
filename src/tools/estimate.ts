@@ -25,7 +25,7 @@ export const estimateSchema = z.object({
     )
     .optional()
     .describe(
-      "Output formats to include in the estimate. Affects cost prediction accuracy. " +
+      "Output formats to include in the estimate. Passed to the API but does not currently affect the cost estimate — the endpoint uses URL-pattern heuristics only. " +
         "'json_v2' returns a structured section tree. " +
         "'rag' returns chunked text for retrieval-augmented generation. " +
         "'content' returns body_markdown + content_hash + images + links. " +
