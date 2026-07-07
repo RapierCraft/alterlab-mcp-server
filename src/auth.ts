@@ -293,8 +293,8 @@ function promptForApiKey(): Promise<string> {
  * before the timeout expires, or false if the timeout expires with no input.
  *
  * Uses raw mode stdin so that a single keypress (no Enter required) is enough
- * to interrupt the countdown. stdin is always restored to non-raw mode before
- * this function returns (try/finally).
+ * to interrupt the countdown. stdin is always restored to non-raw mode inside
+ * finish() before the promise resolves.
  *
  * Safe to call only when process.stdin.isTTY is true — setRawMode is not
  * available in non-TTY contexts and will throw otherwise.
@@ -390,15 +390,6 @@ async function waitForKeypressOrTimeout(timeoutMs = 5_000): Promise<boolean> {
     );
 
     setTimeout(tick, TICK_MS);
-  }).finally(() => {
-    // Belt-and-suspenders: ensure raw mode is always off even on early exit
-    try {
-      if (rawModeEnabled && !keypressDetected) {
-        // already handled in finish(), but guard in case finally fires first
-      }
-    } catch {
-      // ignore
-    }
   });
 }
 
