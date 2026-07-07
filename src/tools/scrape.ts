@@ -4,27 +4,99 @@ import type { AlterLabClient } from "../client.js";
 import { type ApiError, formatErrorResult } from "../errors.js";
 import { formatScrapeResponse } from "../format.js";
 
+const tierEnum = z.enum(["1", "2", "3", "3.5", "4"]);
+
+const costControlsSchema = z
+  .object({
+    force_tier: tierEnum
+      .optional()
+      .describe(
+        "Pin execution to this exact tier, bypassing escalation " +
+          "(1=curl $0.0002, 2=http $0.0003, 3=stealth $0.002, 3.5=lightjs $0.0025, 4=browser $0.004). " +
+          "Use to guarantee a specific engine is used regardless of site difficulty.",
+      ),
+    max_tier: tierEnum
+      .optional()
+      .describe(
+        "Cap automatic escalation at this tier. Scrape will not escalate beyond it even if lower tiers fail. " +
+          "Cannot exceed force_tier when both are set.",
+      ),
+    max_credits: z
+      .number()
+      .positive()
+      .optional()
+      .describe(
+        "Hard spending cap for this request in credits. Request fails if cost would exceed this.",
+      ),
+    prefer_cost: z
+      .boolean()
+      .optional()
+      .describe(
+        "Optimize for cost — try cheaper tiers first, accept lower success probability.",
+      ),
+    prefer_speed: z
+      .boolean()
+      .optional()
+      .describe(
+        "Optimize for speed — skip to the most reliable tier for this domain.",
+      ),
+    fail_fast: z
+      .boolean()
+      .optional()
+      .describe(
+        "Return error instead of escalating to more expensive tiers on failure.",
+      ),
+    time_budget: z
+      .number()
+      .min(5)
+      .max(300)
+      .optional()
+      .describe(
+        "Total wall-clock budget in seconds for the entire tier escalation sequence (5–300s). " +
+          "Escalation stops when remaining budget is insufficient for the next tier attempt.",
+      ),
+  })
+  .optional()
+  .describe(
+    "Fine-grained cost and tier controls. Use to cap spending, pin a tier, or trade off cost vs speed. " +
+      "Prefer these over the top-level prefer_cost/prefer_speed/fail_fast fields for full control.",
+  );
+
 export const scrapeSchema = z.object({
   url: z.string().url().describe("URL to scrape"),
   method: z
-    .enum(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"])
+    .enum(["GET", "POST"])
     .default("GET")
     .describe(
       "HTTP method for the request. Default GET (standard page scraping). " +
-        "Use POST for GraphQL endpoints, form submissions, REST API calls. " +
-        "Use PUT/PATCH for REST API updates. " +
-        "When using POST/PUT/PATCH, provide body with the request payload.",
+        "Use POST for GraphQL endpoints, form submissions, and REST API calls. " +
+        "When using POST, provide body with the request payload. POST costs 1.5x base tier price.",
     ),
   body: z
     .string()
     .optional()
     .describe(
-      "Request body for POST/PUT/PATCH requests. " +
+      "Request body for POST requests. " +
         "For GraphQL: JSON string with 'query' and optional 'variables' fields " +
         '(e.g., \'{"query": "{ user { id name } }"}\').' +
         "For REST APIs: JSON-encoded payload string. " +
         "For form submissions: URL-encoded key=value pairs (e.g., 'name=Alice&email=alice@example.com'). " +
-        "Omit for GET/HEAD/DELETE requests.",
+        "Omit for GET requests.",
+    ),
+  content_type: z
+    .enum([
+      "application/json",
+      "application/x-www-form-urlencoded",
+      "text/plain",
+      "application/graphql",
+    ])
+    .optional()
+    .describe(
+      "Content-Type header for the request body. " +
+        "Defaults to 'application/json' when body is provided. " +
+        "Use 'application/graphql' for raw GraphQL queries. " +
+        "Use 'application/x-www-form-urlencoded' for HTML form submissions. " +
+        "Requires body to be set.",
     ),
   mode: z
     .enum(["auto", "html", "js", "pdf", "ocr"])
@@ -34,13 +106,14 @@ export const scrapeSchema = z.object({
     ),
   formats: z
     .array(
-      z.enum(["text", "json", "json_v2", "html", "markdown", "rag", "content"]),
+      z.enum(["text", "json", "json_v2", "html", "markdown", "rag", "raw", "content"]),
     )
     .default(["markdown"])
     .describe(
       "Output formats. 'markdown' is best for LLM consumption. " +
         "'json_v2' returns a structured section tree (headings + content blocks). " +
         "'rag' returns chunked text optimized for retrieval-augmented generation. " +
+        "'raw' returns the raw response body without extraction. " +
         "'content' returns body_markdown + content_hash + images + links for AI/KB pipelines.",
     ),
   extraction_schema: z
@@ -49,7 +122,7 @@ export const scrapeSchema = z.object({
     .describe(
       "JSON schema for structured extraction. " +
         "The API extracts fields matching this schema from the scraped page using LLM. " +
-        "Result is returned in content.json (add 'json' to formats) and in the top-level filtered_content field. " +
+        "Result is returned in extraction_result. " +
         'Example: { "title": "string", "price": "number", "in_stock": "boolean" }',
     ),
   extraction_model: z
@@ -105,6 +178,37 @@ export const scrapeSchema = z.object({
         "Accepts standard template names (e.g. 'product', 'article', 'job_posting') " +
         "or a custom template name registered in your account. " +
         "When provided, routes the request through template-based extraction.",
+    ),
+  evidence: z
+    .boolean()
+    .optional()
+    .describe(
+      "Include provenance/evidence snippets alongside extracted fields. " +
+        "Each extracted value will include the source text passage it was derived from. " +
+        "Requires extraction_schema or extraction_prompt.",
+    ),
+  filter_content: z
+    .boolean()
+    .optional()
+    .describe(
+      "Apply quality filtering to extracted content. When false (default), returns all parsed content " +
+        "without quality thresholds (lossless mode). When true, filters low-quality boilerplate.",
+    ),
+  cache: z
+    .boolean()
+    .optional()
+    .describe(
+      "Enable caching for this request. When true, repeat requests with identical parameters may " +
+        "return cached results. Only use for idempotent requests (GET pages, read-only POSTs).",
+    ),
+  cache_ttl: z
+    .number()
+    .min(60)
+    .max(86400)
+    .optional()
+    .describe(
+      "Cache TTL in seconds (60–86400). Defaults to 3600 (60 min) when cache=true. " +
+        "Requires cache=true.",
     ),
   render_js: z
     .union([z.boolean(), z.literal("auto")])
@@ -266,6 +370,7 @@ export const scrapeSchema = z.object({
         "Promotes machine-readable metadata embedded in the page over LLM extraction. " +
         "Most effective on e-commerce, recipe, and news article pages.",
     ),
+  cost_controls: costControlsSchema,
 });
 
 export const scrapeDescription =
@@ -276,17 +381,22 @@ export const scrapeDescription =
   "with intelligent 4-tier escalation — no manual configuration needed. " +
   "Cost-efficient: starts at $0.0001/page for simple sites, auto-escalates only when protection is detected. " +
   "Returns markdown by default — optimized for LLM context. " +
-  "Supports GET (default) and POST/PUT/PATCH/DELETE/HEAD via the method parameter. " +
+  "Supports GET (default) and POST via the method parameter. " +
   "Use method='POST' with body for GraphQL APIs, REST endpoints, and form submissions. " +
+  "Use content_type to set the POST body Content-Type (json, urlencoded, graphql, plain). " +
   "Use render_js=true to scrape dynamic pages, JavaScript-heavy sites (React, Angular, Vue, SPAs). " +
   "Use render_js='auto' for mixed sites to detect JS needs per-page (saves 30-60%). " +
   "Use use_proxy=true for geo-restricted or heavily protected sites. " +
   "Use formats=['json_v2'] for a structured section tree (headings + content blocks). " +
   "Use formats=['rag'] for chunked text optimized for RAG pipelines. " +
+  "Use formats=['raw'] for the raw response body without extraction. " +
   "Use formats=['content'] for AI/KB pipelines — returns body_markdown, content_hash, images, links. " +
   "Use extraction_schema to extract structured fields from the page using LLM. " +
   "Use extraction_prompt for natural language extraction instructions. " +
   "Use extraction_profile for pre-built templates (product, article, job_posting, etc.). " +
+  "Use evidence=true to include source passages alongside extracted fields. " +
+  "Use cache=true and cache_ttl to enable response caching. " +
+  "Use cost_controls to cap spending, pin a tier, or set a time budget. " +
   "Supports authenticated scraping via session_id or inline cookies. " +
   "Use scroll_to_load=true for infinite-scroll pages. " +
   "Use location.country to scrape geo-targeted content from any region. " +
@@ -305,6 +415,7 @@ export async function handleScrape(
       url: params.url,
       method: params.method,
       body: params.body,
+      content_type: params.content_type,
       mode: params.mode,
       formats: params.formats,
       sync: true,
@@ -321,11 +432,16 @@ export async function handleScrape(
       extraction_provider: params.extraction_provider,
       extraction_profile: params.extraction_profile,
       template: params.template,
+      evidence: params.evidence,
+      filter_content: params.filter_content,
+      cache: params.cache,
+      cache_ttl: params.cache_ttl,
       prefer_cost: params.prefer_cost,
       prefer_speed: params.prefer_speed,
       fail_fast: params.fail_fast,
       force_refresh: params.force_refresh,
       promote_schema_org: params.promote_schema_org,
+      cost_controls: params.cost_controls,
       advanced: {
         render_js: params.render_js,
         use_proxy: params.use_proxy,

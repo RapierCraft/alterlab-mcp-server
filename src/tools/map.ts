@@ -44,6 +44,13 @@ export const mapSchema = z.object({
     .describe(
       "Sitemap handling: include (parse sitemaps + follow links), skip (links only), only (sitemap URLs only)",
     ),
+  sitemap_path: z
+    .string()
+    .optional()
+    .describe(
+      "Explicit path to the sitemap file (e.g., '/sitemap_index.xml'). " +
+        "Use when the sitemap is not at the standard /sitemap.xml location.",
+    ),
   include_metadata: z
     .boolean()
     .default(false)
@@ -68,7 +75,8 @@ export const mapDescription =
   "Returns a flat list of URLs with source (sitemap/link) and depth. " +
   "Use include_patterns/exclude_patterns to scope discovery to specific sections. " +
   "Use search to rank URLs by relevance to a query. " +
-  "Use include_metadata=true to also fetch page titles and descriptions.";
+  "Use include_metadata=true to also fetch page titles and descriptions. " +
+  "Use sitemap_path to specify a non-standard sitemap location (e.g., '/sitemap_index.xml').";
 
 export async function handleMap(
   client: AlterLabClient,
@@ -83,6 +91,7 @@ export async function handleMap(
       exclude_patterns: params.exclude_patterns,
       search: params.search,
       sitemap: params.sitemap,
+      sitemap_path: params.sitemap_path,
       include_metadata: params.include_metadata,
       include_subdomains: params.include_subdomains,
       respect_robots: params.respect_robots,
