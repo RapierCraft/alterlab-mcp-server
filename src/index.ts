@@ -3,7 +3,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { AlterLabClient } from "./client.js";
-import { loadConfig, type Config } from "./config.js";
+import { type Config } from "./config.js";
+import { ensureAuth } from "./auth.js";
 import {
   scrapeSchema,
   scrapeDescription,
@@ -273,7 +274,7 @@ export function createSandboxServer(): McpServer {
 }
 
 async function main() {
-  const config = loadConfig();
+  const config = await ensureAuth();
   const server = createServer(config);
 
   const transport = new StdioServerTransport();
