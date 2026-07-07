@@ -33,18 +33,20 @@ import {
 
 // Read version from package.json at build time is complex with ESM,
 // so we hardcode it and keep in sync with package.json.
-const VERSION = "1.1.0";
+const VERSION = "1.7.1";
 const MAX_RETRIES = 2;
 
 export class AlterLabClient {
   private apiKey: string;
   private apiUrl: string;
   private userAgent: string;
+  private sourceHeader: string;
 
   constructor(config: Config) {
     this.apiKey = config.apiKey;
     this.apiUrl = config.apiUrl;
     this.userAgent = `alterlab-mcp-server/${VERSION}`;
+    this.sourceHeader = `mcp-server/${VERSION}`;
   }
 
   private async request<T>(
@@ -57,6 +59,7 @@ export class AlterLabClient {
     const headers: Record<string, string> = {
       "X-API-Key": this.apiKey,
       "User-Agent": this.userAgent,
+      "X-AlterLab-Source": this.sourceHeader,
       "Content-Type": "application/json",
     };
 
@@ -275,6 +278,7 @@ export class AlterLabClient {
       headers: {
         "X-API-Key": this.apiKey,
         "User-Agent": this.userAgent,
+        "X-AlterLab-Source": this.sourceHeader,
       },
     });
 
