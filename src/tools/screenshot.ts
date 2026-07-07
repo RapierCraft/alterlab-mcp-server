@@ -86,10 +86,14 @@ export async function handleScreenshot(
       ],
     };
   } catch (error) {
-    if (isApiError(error)) {
-      return formatErrorResult(error, { url: params.url });
+    const balanceWarningSuffix = formatBalanceWarning(client.getLastBalanceWarning());
+    const result = isApiError(error)
+      ? formatErrorResult(error, { url: params.url })
+      : formatErrorResult(error as Error, { url: params.url });
+    if (balanceWarningSuffix && result.content[0]?.type === "text") {
+      (result.content[0] as { type: "text"; text: string }).text += balanceWarningSuffix;
     }
-    return formatErrorResult(error as Error, { url: params.url });
+    return result;
   }
 }
 
