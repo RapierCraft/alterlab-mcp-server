@@ -101,10 +101,12 @@ export function formatErrorResult(
             type: "text",
             text:
               `Access denied${url}: ${detail}\n\n` +
-              "The site may have blocked the request. Suggested actions:\n" +
-              "- Try with `render_js: true` to use a headless browser\n" +
-              "- Try with `use_proxy: true` to route through a premium proxy\n" +
-              "- Some sites may not be scrapable",
+              "The site blocked this request. Suggested actions:\n" +
+              "- Try `render_js: true` — headless browser bypass (escalates to tier 4, ~$0.001/req)\n" +
+              "- Try `use_proxy: true` — premium proxy rotation (+~$0.0002/req)\n" +
+              "- Try both together (`render_js: true, use_proxy: true`) for maximum bypass capability\n" +
+              "- Use `alterlab_estimate_cost` to preview cost before retrying\n" +
+              "- Some sites actively block all scrapers and cannot be scraped",
           },
         ],
       };

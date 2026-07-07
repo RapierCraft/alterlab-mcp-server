@@ -200,6 +200,20 @@ export function formatExtractResponse(response: UnifiedScrapeResponse): string {
 }
 
 /**
+ * Format a cost estimate as a compact inline header (one line).
+ * Used by estimate_first in alterlab_scrape to prepend before scrape results.
+ */
+export function formatEstimateInline(estimate: CostEstimate): string {
+  const tierName =
+    TIER_NAMES[estimate.estimated_tier] || estimate.estimated_tier;
+  const tierPrice = TIER_PRICES[estimate.estimated_tier] || "unknown";
+  return (
+    `> **Pre-flight estimate**: ${tierPrice}/req (${tierName}, tier ${estimate.estimated_tier}) — ` +
+    `confidence: ${estimate.confidence}. ${estimate.reasoning}\n`
+  );
+}
+
+/**
  * Format a cost estimate as readable text.
  */
 export function formatEstimateResponse(estimate: CostEstimate): string {
