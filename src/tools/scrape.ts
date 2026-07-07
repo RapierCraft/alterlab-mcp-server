@@ -218,6 +218,45 @@ export const scrapeSchema = z.object({
       "Geo-targeting parameters for localized content scraping. " +
         "Controls proxy country routing, Accept-Language header, and browser locale.",
     ),
+  prefer_cost: z
+    .boolean()
+    .optional()
+    .describe(
+      "Optimize for lowest cost — try cheaper tiers first before escalating. " +
+        "Best for non-time-sensitive scrapes where minimizing credit spend matters. " +
+        "Mutually exclusive intent with prefer_speed.",
+    ),
+  prefer_speed: z
+    .boolean()
+    .optional()
+    .describe(
+      "Optimize for speed — skip to a reliable tier immediately instead of escalating from Tier 1. " +
+        "Best for time-sensitive scrapes where latency matters more than cost. " +
+        "Mutually exclusive intent with prefer_cost.",
+    ),
+  fail_fast: z
+    .boolean()
+    .optional()
+    .describe(
+      "Fail immediately if the page requires an expensive tier (browser/captcha) instead of auto-escalating. " +
+        "Use this to protect against unexpected credit spend on protected pages. " +
+        "Returns an error with the required tier instead of automatically upgrading.",
+    ),
+  force_refresh: z
+    .boolean()
+    .optional()
+    .describe(
+      "Bypass the cache and always fetch a fresh copy of the page. " +
+        "Use when you need real-time content and a cached result would be stale.",
+    ),
+  promote_schema_org: z
+    .boolean()
+    .optional()
+    .describe(
+      "Use Schema.org JSON-LD/Microdata as the primary structured-data source when present. " +
+        "Promotes machine-readable metadata embedded in the page over LLM extraction. " +
+        "Most effective on e-commerce, recipe, and news article pages.",
+    ),
 });
 
 export const scrapeDescription =
@@ -241,7 +280,12 @@ export const scrapeDescription =
   "Use extraction_profile for pre-built templates (product, article, job_posting, etc.). " +
   "Supports authenticated scraping via session_id or inline cookies. " +
   "Use scroll_to_load=true for infinite-scroll pages. " +
-  "Use location.country to scrape geo-targeted content from any region.";
+  "Use location.country to scrape geo-targeted content from any region. " +
+  "Use prefer_cost=true to minimize credit spend (starts from cheapest tier). " +
+  "Use prefer_speed=true to skip to a fast reliable tier immediately. " +
+  "Use fail_fast=true to error instead of auto-escalating to expensive tiers. " +
+  "Use force_refresh=true to bypass cache and always fetch live content. " +
+  "Use promote_schema_org=true to prefer Schema.org JSON-LD over LLM extraction on structured pages.";
 
 export async function handleScrape(
   client: AlterLabClient,
@@ -267,6 +311,11 @@ export async function handleScrape(
       extraction_model: params.extraction_model ?? undefined,
       extraction_provider: params.extraction_provider,
       extraction_profile: params.extraction_profile,
+      prefer_cost: params.prefer_cost,
+      prefer_speed: params.prefer_speed,
+      fail_fast: params.fail_fast,
+      force_refresh: params.force_refresh,
+      promote_schema_org: params.promote_schema_org,
       advanced: {
         render_js: params.render_js,
         use_proxy: params.use_proxy,

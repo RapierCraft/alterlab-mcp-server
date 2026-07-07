@@ -29,6 +29,7 @@ import {
   type SessionValidateResponse,
   type UnifiedScrapeRequest,
   type UnifiedScrapeResponse,
+  type UsageResponse,
 } from "./types.js";
 
 // Read version from package.json at build time is complex with ESM,
@@ -118,6 +119,10 @@ export class AlterLabClient {
 
   async getBalance(): Promise<BalanceResponse> {
     return this.request<BalanceResponse>("GET", "/api/v1/billing/balance");
+  }
+
+  async getUsage(): Promise<UsageResponse> {
+    return this.request<UsageResponse>("GET", "/api/v1/billing/usage");
   }
 
   async listSessions(): Promise<SessionListResponse> {

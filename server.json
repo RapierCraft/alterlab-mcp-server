@@ -54,6 +54,38 @@
       "description": "Check your current account balance and credit usage."
     },
     {
+      "name": "alterlab_get_usage",
+      "description": "Get a detailed spending breakdown — credits consumed today, this week, and this month, plus top domains by cost."
+    },
+    {
+      "name": "alterlab_crawl",
+      "description": "Start a full website crawl for RAG indexing or knowledge base building. Returns a crawl_id for async polling."
+    },
+    {
+      "name": "alterlab_crawl_status",
+      "description": "Poll the status and results of an ongoing or completed crawl."
+    },
+    {
+      "name": "alterlab_crawl_cancel",
+      "description": "Cancel an ongoing crawl and refund unused credits."
+    },
+    {
+      "name": "alterlab_search",
+      "description": "Search the web across Google/Bing/DuckDuckGo. Returns URLs, titles, and snippets."
+    },
+    {
+      "name": "alterlab_map",
+      "description": "Discover all URLs on a website without scraping content. Returns a URL map for planning crawls."
+    },
+    {
+      "name": "alterlab_batch",
+      "description": "Submit a batch of URLs to scrape asynchronously. Returns a batch_id for polling."
+    },
+    {
+      "name": "alterlab_batch_status",
+      "description": "Poll the status and results of an asynchronous batch scrape job."
+    },
+    {
       "name": "alterlab_list_sessions",
       "description": "List all active authenticated browser sessions."
     },

@@ -90,7 +90,8 @@ export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
       `Tier: ${tierName} (${tierPrice}/req) | ` +
       `Cost: ${cost} | ` +
       `Time: ${response.response_time_ms}ms` +
-      (response.cached ? " | Cached" : ""),
+      (response.cached ? " | Cached" : "") +
+      (response.billing.byop_applied ? " | BYOP" : ""),
   );
 
   if (response.redirect_chain && response.redirect_chain.length > 0) {
@@ -98,6 +99,20 @@ export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
       .map((hop) => `${hop.status_code} → ${hop.url}`)
       .join("\n  ");
     parts.push(`Redirect chain:\n  ${chain}`);
+  }
+
+  if (
+    response.billing.escalations &&
+    response.billing.escalations.length > 1
+  ) {
+    const escalationSummary = response.billing.escalations
+      .map((e) => {
+        const tierLabel = TIER_NAMES[e.tier] || e.tier;
+        const durationLabel = e.duration_ms ? ` (${e.duration_ms}ms)` : "";
+        return `${tierLabel}: ${e.result}${durationLabel}`;
+      })
+      .join(" → ");
+    parts.push(`Escalation path: ${escalationSummary}`);
   }
 
   if (response.billing.optimization_suggestion) {

@@ -92,6 +92,11 @@ import {
   disableBetaFeatureDescription,
   handleDisableBetaFeature,
 } from "./tools/beta_features.js";
+import {
+  usageSchema,
+  usageDescription,
+  handleUsage,
+} from "./tools/usage.js";
 
 function createServer(config: Config): McpServer {
   const client = new AlterLabClient(config);
@@ -135,6 +140,13 @@ function createServer(config: Config): McpServer {
     balanceDescription,
     balanceSchema.shape,
     () => handleBalance(client),
+  );
+
+  server.tool(
+    "alterlab_get_usage",
+    usageDescription,
+    usageSchema.shape,
+    () => handleUsage(client),
   );
 
   // Crawl tools

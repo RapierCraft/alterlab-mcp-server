@@ -60,6 +60,12 @@ export interface UnifiedScrapeRequest {
   session_id?: string;
   cookies?: Record<string, string>;
   location?: LocationOptions;
+  // Cost-control hints — influence tier selection without changing scrape mode
+  prefer_cost?: boolean;
+  prefer_speed?: boolean;
+  fail_fast?: boolean;
+  force_refresh?: boolean;
+  promote_schema_org?: boolean;
 }
 
 // ============================================================================
@@ -590,4 +596,38 @@ export interface UserResponse {
   reduced_bonus: boolean;
   /** Structured rate-limit tier details for the current balance level. */
   tier_info?: TierInfo | null;
+}
+
+// ============================================================================
+// Usage / Spending Types
+// ============================================================================
+
+export interface UsageDomainEntry {
+  domain: string;
+  credits_used: number;
+  requests: number;
+}
+
+/**
+ * Detailed usage breakdown returned by GET /api/v1/billing/usage.
+ * Provides spending summaries for different time windows and the top domains
+ * consuming the most credits.
+ */
+export interface UsageResponse {
+  /** Credits consumed today (UTC day). */
+  today_credits: number;
+  /** Credits consumed in the current calendar week (Mon–Sun UTC). */
+  this_week_credits: number;
+  /** Credits consumed in the current calendar month. */
+  this_month_credits: number;
+  /** Total lifetime credits consumed across all time. */
+  total_credits: number;
+  /** Number of API requests made today. */
+  today_requests: number;
+  /** Number of API requests made this week. */
+  this_week_requests: number;
+  /** Top domains by credit consumption (up to 10 entries). */
+  top_domains: UsageDomainEntry[];
+  /** Timestamp of the oldest usage record included in totals. */
+  usage_since?: string;
 }
