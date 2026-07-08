@@ -5,8 +5,9 @@
  *   1. ALTERLAB_API_KEY environment variable
  *   2. ~/.alterlab/config.json
  *   3. Interactive auth (TTY only):
- *      a. Device flow (POST /auth/device → open browser → poll /auth/token)
- *      b. Fallback: manual API key paste
+ *      a. 5-second countdown — press any key to switch to manual paste
+ *      b. Device flow (POST /auth/device → open browser → poll /auth/token)
+ *      c. Fallback: manual API key paste
  *
  * All user-facing output goes to stderr — stdout is reserved for MCP protocol.
  */
@@ -284,6 +285,115 @@ function promptForApiKey(): Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
+// Countdown with keypress detection
+// ---------------------------------------------------------------------------
+
+/**
+ * Display a countdown on stderr and return true if the user presses a key
+ * before the timeout expires, or false if the timeout expires with no input.
+ *
+ * Uses raw mode stdin so that a single keypress (no Enter required) is enough
+ * to interrupt the countdown. stdin is always restored to non-raw mode inside
+ * finish() before the promise resolves.
+ *
+ * Safe to call only when process.stdin.isTTY is true — setRawMode is not
+ * available in non-TTY contexts and will throw otherwise.
+ *
+ * @param timeoutMs - Total countdown duration in milliseconds (default 5000)
+ * @returns true if keypress detected before timeout, false if timeout expired
+ */
+async function waitForKeypressOrTimeout(timeoutMs = 5_000): Promise<boolean> {
+  const TICK_MS = 100; // update interval for progress display
+  const BAR_WIDTH = 10; // width of the progress bar in characters
+
+  let keypressDetected = false;
+
+  // Enable raw mode so we receive individual keypresses without Enter.
+  // Guard with isTTY (caller must also check) and a try/catch in case the
+  // terminal does not support raw mode (e.g., some CI pseudo-TTYs).
+  let rawModeEnabled = false;
+  try {
+    process.stdin.setRawMode(true);
+    rawModeEnabled = true;
+  } catch {
+    // setRawMode unavailable — fall through without keypress detection.
+    // The countdown will still display and expire normally.
+  }
+
+  return new Promise<boolean>((resolve) => {
+    let ticksDone = 0;
+    let resolved = false;
+
+    const finish = (pressed: boolean): void => {
+      if (resolved) return;
+      resolved = true;
+
+      // Clear the countdown line from stderr
+      process.stderr.write("\r\x1b[K");
+
+      // Restore stdin before resolving
+      try {
+        if (rawModeEnabled) {
+          process.stdin.setRawMode(false);
+        }
+        process.stdin.pause();
+      } catch {
+        // ignore cleanup errors
+      }
+
+      keypressDetected = pressed;
+      resolve(pressed);
+    };
+
+    // Keypress handler — any key press interrupts the countdown
+    const onData = (_chunk: Buffer): void => {
+      finish(true);
+    };
+
+    if (rawModeEnabled) {
+      process.stdin.resume();
+      process.stdin.once("data", onData);
+    }
+
+    // Tick function — renders the countdown progress bar on stderr
+    const tick = (): void => {
+      if (resolved) return;
+
+      ticksDone += 1;
+      const elapsed = ticksDone * TICK_MS;
+      const remaining = Math.max(0, timeoutMs - elapsed);
+      const remainingSeconds = Math.ceil(remaining / 1_000);
+
+      const filled = Math.round((elapsed / timeoutMs) * BAR_WIDTH);
+      const empty = BAR_WIDTH - filled;
+      const bar = "█".repeat(filled) + "░".repeat(empty);
+
+      process.stderr.write(
+        `\r  [${bar}] ${remainingSeconds}s — press any key to enter an existing key instead`,
+      );
+
+      if (elapsed >= timeoutMs) {
+        if (rawModeEnabled) {
+          process.stdin.removeListener("data", onData);
+        }
+        finish(false);
+      } else {
+        setTimeout(tick, TICK_MS);
+      }
+    };
+
+    // Initial render before first tick
+    const bar0 = "░".repeat(BAR_WIDTH);
+    const secs0 = Math.ceil(timeoutMs / 1_000);
+    process.stderr.write(
+      `\r  [${bar0}] ${secs0}s — press any key to enter an existing key instead`,
+    );
+
+    setTimeout(tick, TICK_MS);
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Main exported function
 // ---------------------------------------------------------------------------
 
@@ -294,8 +404,9 @@ function promptForApiKey(): Promise<string> {
  *   1. ALTERLAB_API_KEY environment variable
  *   2. ~/.alterlab/config.json
  *   3. Interactive auth (only when running in a TTY):
- *      a. OAuth 2.0 Device Authorization Grant flow
- *      b. Manual API key paste (fallback)
+ *      a. 5-second countdown — press any key to switch to manual paste
+ *      b. OAuth 2.0 Device Authorization Grant flow (if countdown expires)
+ *      c. Manual API key paste (if keypress during countdown, or device flow fails)
  *
  * When not running in a TTY (e.g., as an MCP server subprocess), emits a
  * helpful error on stderr and exits with code 1 if no key is found.
@@ -345,17 +456,29 @@ export async function ensureAuth(): Promise<Config> {
       "",
       "  No API key found. Let's get you authenticated.",
       "",
+      "  → A browser will open to authenticate in 5 seconds...",
+      "",
     ].join("\n"),
   );
 
-  // 3a. Try device flow
-  const deviceApiKey = await runDeviceFlow(apiUrl);
+  // 3a. 5-second countdown — lets the user interrupt before device flow starts
+  const userPressedKey = await waitForKeypressOrTimeout(5_000);
 
-  let apiKey: string | null = deviceApiKey;
+  let apiKey: string | null = null;
 
-  // 3b. Fallback to manual paste if device flow failed or unavailable
-  if (!apiKey) {
+  if (userPressedKey) {
+    // User pressed a key — skip device flow, go straight to manual paste
+    process.stderr.write("  (Switching to manual key entry)\n\n");
     apiKey = await promptForApiKey();
+  } else {
+    // Countdown expired — attempt device flow
+    const deviceApiKey = await runDeviceFlow(apiUrl);
+    apiKey = deviceApiKey;
+
+    // 3b. Fallback to manual paste if device flow failed or unavailable
+    if (!apiKey) {
+      apiKey = await promptForApiKey();
+    }
   }
 
   if (!apiKey) {

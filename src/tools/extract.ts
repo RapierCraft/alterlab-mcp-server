@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { AlterLabClient } from "../client.js";
 import { type ApiError, formatErrorResult } from "../errors.js";
+import { formatBalanceWarning } from "../format.js";
 
 export const extractSchema = z.object({
   content: z
@@ -165,16 +166,17 @@ export async function handleExtract(
     });
 
     const text = formatStandaloneExtractResponse(response, params.source_url);
-    return { content: [{ type: "text", text }] };
+    const balanceWarningSuffix = formatBalanceWarning(client.getLastBalanceWarning());
+    return { content: [{ type: "text", text: text + balanceWarningSuffix }] };
   } catch (error) {
-    if (isApiError(error)) {
-      return formatErrorResult(error, {
-        url: params.source_url ?? "raw content",
-      });
+    const balanceWarningSuffix = formatBalanceWarning(client.getLastBalanceWarning());
+    const result = isApiError(error)
+      ? formatErrorResult(error, { url: params.source_url ?? "raw content" })
+      : formatErrorResult(error as Error, { url: params.source_url ?? "raw content" });
+    if (balanceWarningSuffix && result.content[0]?.type === "text") {
+      (result.content[0] as { type: "text"; text: string }).text += balanceWarningSuffix;
     }
-    return formatErrorResult(error as Error, {
-      url: params.source_url ?? "raw content",
-    });
+    return result;
   }
 }
 

@@ -2,6 +2,7 @@ import {
   TIER_NAMES,
   TIER_PRICES,
   type BalanceResponse,
+  type BalanceWarning,
   type BetaFeatureListResponse,
   type BetaFeatureMyResponse,
   type BetaFeatureToggleResponse,
@@ -257,6 +258,20 @@ export function formatExtractResponse(response: UnifiedScrapeResponse): string {
 }
 
 /**
+ * Format a cost estimate as a compact inline header (one line).
+ * Used by estimate_first in alterlab_scrape to prepend before scrape results.
+ */
+export function formatEstimateInline(estimate: CostEstimate): string {
+  const tierName =
+    TIER_NAMES[estimate.estimated_tier] || estimate.estimated_tier;
+  const tierPrice = TIER_PRICES[estimate.estimated_tier] || "unknown";
+  return (
+    `> **Pre-flight estimate**: ${tierPrice}/req (${tierName}, tier ${estimate.estimated_tier}) — ` +
+    `confidence: ${estimate.confidence}. ${estimate.reasoning}\n`
+  );
+}
+
+/**
  * Format a cost estimate as readable text.
  */
 export function formatEstimateResponse(estimate: CostEstimate): string {
@@ -275,19 +290,74 @@ export function formatEstimateResponse(estimate: CostEstimate): string {
 }
 
 /**
- * Format a balance response as readable text.
+ * Format a balance response as readable text, including balance status and
+ * estimated runway (days at current spending rate).
  */
 export function formatBalanceResponse(balance: BalanceResponse): string {
   const deposited = (balance.total_deposited_cents / 100).toFixed(2);
   const spent = (balance.total_spent_cents / 100).toFixed(2);
+  const balanceUsd = balance.balance_microcents / 1_000_000;
 
-  return (
-    `**Account Balance**\n\n` +
-    `- Balance: **${balance.balance_display}**\n` +
-    `- Total deposited: $${deposited}\n` +
-    `- Total spent: $${spent}\n\n` +
-    `Add funds: https://alterlab.io/dashboard/billing`
-  );
+  // Balance status classification
+  let status: string;
+  if (balanceUsd <= 0) {
+    status = "Exhausted — top up to continue scraping";
+  } else if (balanceUsd < 0.10) {
+    status = "Critical (< $0.10)";
+  } else if (balanceUsd < 0.50) {
+    status = "Low (< $0.50)";
+  } else {
+    status = "Healthy";
+  }
+
+  // Estimated runway: days at current average daily spend rate.
+  // Uses total_spent_cents as a proxy for lifetime spend, but since we don't
+  // know the account age, we can only compute runway if daily spend is
+  // non-zero. The balance endpoint doesn't expose daily spend directly, so
+  // we skip runway here and recommend alterlab_get_usage for that detail.
+  const lines: string[] = [
+    `**Account Balance**\n`,
+    `- Balance: **${balance.balance_display}**`,
+    `- Status: ${status}`,
+    `- Total deposited: $${deposited}`,
+    `- Total spent: $${spent}`,
+    `\nFor spending breakdown and estimated runway: use \`alterlab_get_usage\``,
+    `Add funds: https://alterlab.io/dashboard/billing`,
+  ];
+
+  return lines.join("\n");
+}
+
+/**
+ * Format a balance warning from response headers into a human-readable suffix.
+ *
+ * Returns a non-empty string (starting with a newline) when the balance is
+ * low, critical, or exhausted. Returns an empty string when warning is null
+ * (healthy balance — no suffix appended).
+ */
+export function formatBalanceWarning(warning: BalanceWarning | null): string {
+  if (!warning) return "";
+
+  const fundUrl = "https://alterlab.io/dashboard/billing";
+  switch (warning.level) {
+    case "exhausted":
+      return (
+        `\n\n> **Balance exhausted**: ${warning.balance} remaining. ` +
+        `Add funds to continue scraping: ${fundUrl}`
+      );
+    case "critical":
+      return (
+        `\n\n> **Critical balance**: ${warning.balance} remaining. ` +
+        `Top up soon to avoid interruptions: ${fundUrl}`
+      );
+    case "low":
+      return (
+        `\n\n> **Low balance**: ${warning.balance} remaining. ` +
+        `Add funds: ${fundUrl}`
+      );
+    default:
+      return "";
+  }
 }
 
 /**

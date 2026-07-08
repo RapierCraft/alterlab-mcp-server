@@ -539,6 +539,23 @@ export interface BalanceResponse {
   total_spent_cents: number;
 }
 
+/**
+ * Balance warning data parsed from X-AlterLab-Balance and
+ * X-AlterLab-Balance-Warning response headers.
+ *
+ * The backend sends these headers on every API response so the client can
+ * surface proactive warnings to the user without requiring a dedicated
+ * balance check call.
+ */
+export interface BalanceWarning {
+  /** Balance level as reported by the header: 'low', 'critical', or 'exhausted'. */
+  level: "low" | "critical" | "exhausted";
+  /** Human-readable balance amount from X-AlterLab-Balance (e.g. '$0.42'). */
+  balance: string;
+  /** Raw balance in dollars parsed from the header, or null if unparseable. */
+  balance_usd: number | null;
+}
+
 // ============================================================================
 // Beta Features Types
 // ============================================================================

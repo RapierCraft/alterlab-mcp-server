@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { AlterLabClient } from "../client.js";
 import { type ApiError, formatErrorResult } from "../errors.js";
-import { formatScrapeResponse } from "../format.js";
+import { formatScrapeResponse, formatEstimateInline, formatBalanceWarning } from "../format.js";
 
 const tierEnum = z.enum(["1", "2", "3", "3.5", "4"]);
 
@@ -371,6 +371,15 @@ export const scrapeSchema = z.object({
         "Most effective on e-commerce, recipe, and news article pages.",
     ),
   cost_controls: costControlsSchema,
+  estimate_first: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Run a cost estimate before scraping and include it in the response. " +
+        "Adds one lightweight API call (~50ms) with no credit charge. " +
+        "The estimated tier, cost, and confidence are prepended to the scrape result. " +
+        "Useful for unfamiliar or potentially expensive sites — see cost before committing.",
+    ),
 });
 
 export const scrapeDescription =
@@ -404,12 +413,34 @@ export const scrapeDescription =
   "Use prefer_speed=true to skip to a fast reliable tier immediately. " +
   "Use fail_fast=true to error instead of auto-escalating to expensive tiers. " +
   "Use force_refresh=true to bypass cache and always fetch live content. " +
-  "Use promote_schema_org=true to prefer Schema.org JSON-LD over LLM extraction on structured pages.";
+  "Use promote_schema_org=true to prefer Schema.org JSON-LD over LLM extraction on structured pages. " +
+  "Use estimate_first=true to run a free cost estimate before scraping (prepended to the result).";
 
 export async function handleScrape(
   client: AlterLabClient,
   params: z.infer<typeof scrapeSchema>,
 ): Promise<CallToolResult> {
+  // Optional pre-flight cost estimate — runs before the scrape, no credits charged.
+  // On failure, degrade gracefully: prepend a warning and continue with the scrape.
+  let estimatePrefix = "";
+  if (params.estimate_first) {
+    try {
+      const estimate = await client.estimate({
+        url: params.url,
+        mode: params.mode,
+        formats: params.formats,
+        advanced: {
+          render_js: typeof params.render_js === "boolean" ? params.render_js : false,
+          use_proxy: params.use_proxy,
+        },
+      });
+      estimatePrefix = formatEstimateInline(estimate) + "\n";
+    } catch {
+      estimatePrefix =
+        "> **Pre-flight estimate**: unavailable (estimate API call failed — proceeding with scrape).\n\n";
+    }
+  }
+
   try {
     const response = await client.scrape({
       url: params.url,
@@ -454,14 +485,19 @@ export async function handleScrape(
       },
     });
 
+    const balanceWarningSuffix = formatBalanceWarning(client.getLastBalanceWarning());
     return {
-      content: [{ type: "text", text: formatScrapeResponse(response) }],
+      content: [{ type: "text", text: estimatePrefix + formatScrapeResponse(response) + balanceWarningSuffix }],
     };
   } catch (error) {
-    if (isApiError(error)) {
-      return formatErrorResult(error, { url: params.url });
+    const balanceWarningSuffix = formatBalanceWarning(client.getLastBalanceWarning());
+    const result = isApiError(error)
+      ? formatErrorResult(error, { url: params.url })
+      : formatErrorResult(error as Error, { url: params.url });
+    if (balanceWarningSuffix && result.content[0]?.type === "text") {
+      (result.content[0] as { type: "text"; text: string }).text += balanceWarningSuffix;
     }
-    return formatErrorResult(error as Error, { url: params.url });
+    return result;
   }
 }
 
