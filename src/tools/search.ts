@@ -63,6 +63,13 @@ export const searchSchema = z.object({
     .record(z.unknown())
     .optional()
     .describe("JSON schema for structured extraction when scrape_results=true"),
+  safe_search: z
+    .boolean()
+    .optional()
+    .describe(
+      "Enable safe search filtering to exclude adult content from results. " +
+        "Defaults to the search engine's own safe-search setting when omitted.",
+    ),
 });
 
 export const searchDescription =
@@ -73,7 +80,8 @@ export const searchDescription =
   "Set scrape_results=true to also scrape each result page (with anti-bot bypass) and get full content — " +
   "each page is billed at its normal scraping tier cost. " +
   "Use domain to restrict results to a specific site (equivalent to site: operator). " +
-  "Use time_range to filter by recency (hour/day/week/month/year).";
+  "Use time_range to filter by recency (hour/day/week/month/year). " +
+  "Use safe_search=true to filter adult content from results.";
 
 export async function handleSearch(
   client: AlterLabClient,
@@ -91,6 +99,7 @@ export async function handleSearch(
       scrape_results: params.scrape_results,
       formats: params.formats,
       extraction_schema: params.extraction_schema,
+      safe_search: params.safe_search,
     });
 
     const text = formatSearchResponse(response, params.query);
