@@ -380,6 +380,52 @@ export const scrapeSchema = z.object({
         "The estimated tier, cost, and confidence are prepended to the scrape result. " +
         "Useful for unfamiliar or potentially expensive sites — see cost before committing.",
     ),
+
+  // ── Auto-generated from OpenAPI spec ──
+  actions:
+    z.union([z.array(z.unknown()), z.unknown()]).optional().describe("Browser automation actions to execute after page load (max 20). Requires render_js=true. Actions execute sequentially; failed actions are skipped (don't abort the sequence). Results returned in action_results."),
+  embeddings:
+    z.union([z.unknown()]).optional().describe("Optional embeddings configuration. When enabled, scraped text content is chunked and embedded using OpenAI models. +$0.001 per page."),
+  enable_scroll:
+    z.union([z.boolean(), z.unknown()]).optional().describe("Force enable scrolling for lazy-load images. true: Always scroll (captures dynamic images, +5-10s), false: Never scroll (faster, may miss dynamic images), null: Auto (scroll unless social media site)"),
+  extraction_template:
+    z.union([z.enum(["auto", "product", "article", "job_posting", "faq", "recipe", "event", "ecommerce_homepage", "directory_listing"]), z.unknown()]).optional().describe("Shorthand for extraction_profile. Selects a pre-built schema template by name. Mutually exclusive with extraction_profile."),
+  flatten_shadow_dom:
+    z.boolean().default(false).describe("Flatten Shadow DOM roots into regular DOM for extraction (free, requires render_js). Web Components with shadow roots become visible in the serialized HTML."),
+  generate_pdf:
+    z.boolean().default(false).describe("Generate PDF of rendered page (+$0.0004, requires render_js)"),
+  headers:
+    z.union([z.record(z.unknown()), z.unknown()]).optional().describe("Custom HTTP headers to include in the request to the target URL. Hop-by-hop headers (Connection, Transfer-Encoding, Host, etc.) are not allowed."),
+  include_iframes:
+    z.boolean().default(false).describe("Inline iframe content into the main document (free, requires render_js). Same-origin iframes are read directly; cross-origin iframes are marked but not fetched."),
+  markdown:
+    z.boolean().default(false).describe("Extract content as Markdown (free)"),
+  ocr:
+    z.boolean().default(false).describe("Extract text from images using OCR (+$0.001)"),
+  ocr_language:
+    z.string().default("eng").describe("See AlterLab API docs for ocr_language."),
+  pdf_format:
+    z.string().default("markdown").describe("See AlterLab API docs for pdf_format."),
+  proxy_integration_id:
+    z.union([z.string(), z.unknown()]).optional().describe("Specific proxy integration ID to use (requires use_own_proxy=true)"),
+  screenshot:
+    z.boolean().default(false).describe("Capture full-page screenshot (+$0.0002, requires render_js)"),
+  section_filter:
+    z.union([z.unknown()]).optional().describe("Filter options for json_v2 section tree output. Only applies when 'json_v2' is in the formats list. Controls which sections and content blocks are included in the response."),
+  session_headers:
+    z.union([z.record(z.unknown()), z.unknown()]).optional().describe("Inline auth headers (e.g. Authorization: Bearer). Merged with session headers if session_id is also resolving headers."),
+  sticky_session:
+    z.union([z.string(), z.unknown()]).optional().describe("Customer-facing sticky-session handle. Two separate /scrape calls that pass the same sticky_session value reuse the cookies captured on the first call (see captured_cookies in the response) for the handle's TTL, and target the SAME exit IP on a best-effort basis. Note the exit IP is only guaranteed to hold for the upstream residential-session window (~10 minutes) — for longer TTLs the shared cookie jar persists but the exit IP may rotate. Enables stateful multi-request flows — e.g. request 1 loads a page, request 2 fetches the captcha/image that appeared using request 1's cookie jar (and, within ~10 min, the same IP). Requires a paid plan (growth tier or above). Alphanumeric, '-' and '_' only, max 128 chars."),
+  sticky_session_ttl:
+    z.union([z.number(), z.unknown()]).optional().describe("Sticky-session lifetime in seconds (300–7200, default 1800). This governs how long the captured cookie jar bound to sticky_session is retained; after it the handle resolves to a fresh jar. The exit-IP pin is separate and shorter — it holds only for the upstream residential-session window (~10 minutes), so a TTL above that keeps the cookie jar alive while the exit IP may rotate. Ignored unless sticky_session is set."),
+  use_own_proxy:
+    z.boolean().default(false).describe("Use your own integrated proxy instead of system proxy ($0.0008/request)"),
+  use_system_proxy:
+    z.boolean().default(false).describe("Override your default proxy integration and use AlterLab's system proxy instead"),
+  wait_condition:
+    z.string().default("networkidle").describe("Wait condition for JS rendering (domcontentloaded|networkidle|load)"),
+  wait_until:
+    z.string().default("networkidle").describe("See AlterLab API docs for wait_until."),
 });
 
 export const scrapeDescription =
