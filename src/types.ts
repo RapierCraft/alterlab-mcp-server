@@ -2,17 +2,38 @@
 // API Request Types
 // ============================================================================
 
+export type ScrapeAction = { type: string; [key: string]: unknown };
+
 export interface AdvancedOptions {
   render_js?: boolean | "auto";
   screenshot?: boolean;
   markdown?: boolean;
+  generate_pdf?: boolean;
+  ocr?: boolean;
   use_proxy?: boolean;
+  use_own_proxy?: boolean;
+  use_system_proxy?: boolean;
+  proxy_integration_id?: string;
   proxy_country?: string;
   wait_condition?: string;
   remove_cookie_banners?: boolean;
+  include_iframes?: boolean;
+  flatten_shadow_dom?: boolean;
+  skip_tls_verification?: boolean;
+  block_images?: boolean;
   scroll_to_load?: boolean;
   scroll_count?: number;
-  block_images?: boolean;
+  section_filter?: {
+    min_content_blocks?: number;
+    exclude_content_types?: string[];
+    content_only?: boolean;
+  };
+  session_id?: string;
+  cookies?: Record<string, string>;
+  session_headers?: Record<string, string>;
+  sticky_session?: string;
+  sticky_session_ttl?: number;
+  actions?: ScrapeAction[];
 }
 
 export interface LocationOptions {
@@ -36,8 +57,37 @@ export interface CrawlCostControls {
   force_tier?: "1" | "2" | "3" | "3.5" | "4";
 }
 
+export type OutputFormat =
+  | "text"
+  | "json"
+  | "json_v2"
+  | "html"
+  | "markdown"
+  | "rag"
+  | "content"
+  | "raw";
+
+export type ExtractionProfile =
+  | "auto"
+  | "product"
+  | "article"
+  | "job_posting"
+  | "faq"
+  | "recipe"
+  | "event"
+  | "ecommerce_homepage"
+  | "directory_listing";
+
+export interface EmbeddingsConfig {
+  enabled?: boolean;
+  model?: "text-embedding-3-small" | "text-embedding-3-large";
+  chunk_size?: number;
+  chunk_overlap?: number;
+}
+
 export interface UnifiedScrapeRequest {
   url: string;
+  mode?: "auto" | "html" | "js" | "pdf" | "ocr";
   method?: "GET" | "POST";
   body?: string;
   content_type?:
@@ -45,54 +95,35 @@ export interface UnifiedScrapeRequest {
     | "application/x-www-form-urlencoded"
     | "text/plain"
     | "application/graphql";
-  mode?: "auto" | "html" | "js" | "pdf" | "ocr";
+  headers?: Record<string, string>;
   sync?: boolean;
+  sync_policy?: "auto" | "wait_until_deadline";
   advanced?: AdvancedOptions;
-  formats?: (
-    | "text"
-    | "json"
-    | "json_v2"
-    | "html"
-    | "markdown"
-    | "rag"
-    | "content"
-    | "raw"
-  )[];
+  location?: LocationOptions;
+  cost_controls?: CostControls;
+  cache?: boolean;
+  cache_ttl?: number;
+  force_refresh?: boolean;
   include_raw_html?: boolean;
   timeout?: number;
   max_response_bytes?: number;
+  formats?: OutputFormat[];
   extraction_schema?: Record<string, unknown>;
   extraction_prompt?: string;
-  extraction_model?: string;
   extraction_provider?: "openai" | "anthropic" | "openrouter" | "groq";
-  extraction_profile?:
-    | "auto"
-    | "product"
-    | "article"
-    | "job_posting"
-    | "faq"
-    | "recipe"
-    | "event"
-    | "ecommerce_homepage"
-    | "directory_listing";
-  template?: string;
+  extraction_model?: string;
+  extraction_profile?: ExtractionProfile;
+  extraction_template?: ExtractionProfile;
   evidence?: boolean;
+  promote_schema_org?: boolean;
   filter_content?: boolean;
-  cache?: boolean;
-  cache_ttl?: number;
   wait_for?: string;
   screenshot?: boolean;
   wait_until?: string;
-  session_id?: string;
-  cookies?: Record<string, string>;
-  location?: LocationOptions;
-  // Cost-control hints — influence tier selection without changing scrape mode
-  prefer_cost?: boolean;
-  prefer_speed?: boolean;
-  fail_fast?: boolean;
-  force_refresh?: boolean;
-  promote_schema_org?: boolean;
-  cost_controls?: CostControls;
+  enable_scroll?: boolean;
+  pdf_format?: string;
+  ocr_language?: string;
+  embeddings?: EmbeddingsConfig;
 }
 
 // ============================================================================
@@ -101,10 +132,12 @@ export interface UnifiedScrapeRequest {
 
 export interface CrawlAdvancedOptions {
   render_js?: boolean | "auto";
+  screenshot?: boolean;
   use_proxy?: boolean;
   wait_for?: string;
   timeout?: number;
-  block_images?: boolean;
+  delay?: number;
+  depth_strategy?: "eager" | "sequential";
 }
 
 export interface CrawlRequest {
@@ -115,24 +148,43 @@ export interface CrawlRequest {
   exclude_patterns?: string[];
   sitemap?: "include" | "skip" | "only";
   sitemap_path?: string;
-  formats?: ("text" | "json" | "json_v2" | "html" | "markdown")[];
-  extraction_schema?: Record<string, unknown>;
-  extraction_profile?:
-    | "auto"
-    | "product"
-    | "article"
-    | "job_posting"
-    | "faq"
-    | "recipe"
-    | "event";
-  headers?: Record<string, string>;
-  extraction_model?: string;
+  budget?: Record<string, number>;
+  priority?: {
+    keywords?: string[];
+    boost_patterns?: string[];
+    demote_patterns?: string[];
+  };
   max_concurrency?: number;
+  headers?: Record<string, string>;
+  formats?: Exclude<OutputFormat, "raw">[];
+  extraction?: "auto";
+  extraction_schema?: Record<string, unknown>;
+  extraction_profile?: ExtractionProfile;
+  extraction_template?: ExtractionProfile;
+  extraction_provider?: "openai" | "anthropic" | "openrouter" | "groq";
+  extraction_model?: string;
   respect_robots?: boolean;
   include_subdomains?: boolean;
+  change_tracking?: {
+    enabled?: boolean;
+    tracking_id?: string;
+    mode?: "content" | "structured";
+    include_diff?: boolean;
+  };
   webhook_url?: string;
-  cost_controls?: CrawlCostControls;
+  webhook?: {
+    url: string;
+    events?: string[];
+    secret?: string;
+    headers?: Record<string, string>;
+    metadata?: Record<string, unknown>;
+  };
   advanced?: CrawlAdvancedOptions;
+  cost_controls?: CrawlCostControls;
+  storage?: "redis" | "s3" | "r2";
+  cache?: boolean;
+  cache_ttl?: number;
+  force_refresh?: boolean;
 }
 
 export interface CrawlResponse {
@@ -166,16 +218,17 @@ export interface CrawlCancelResponse {
 
 export interface SearchRequest {
   query: string;
+  engine?: "duckduckgo" | "google" | "bing";
+  domain?: string;
   num_results?: number;
   page?: number;
-  domain?: string;
   country?: string;
   language?: string;
   time_range?: "hour" | "day" | "week" | "month" | "year";
-  scrape_results?: boolean;
-  formats?: ("text" | "json" | "json_v2" | "html" | "markdown")[];
-  extraction_schema?: Record<string, unknown>;
   safe_search?: boolean;
+  scrape_results?: boolean;
+  formats?: Exclude<OutputFormat, "raw">[];
+  extraction_schema?: Record<string, unknown>;
 }
 
 export interface SearchResponse {
@@ -319,25 +372,48 @@ export interface ExtractResponse {
 export interface BatchItemRequest {
   url: string;
   mode?: "auto" | "html" | "js" | "pdf" | "ocr";
-  formats?: (
-    | "text"
-    | "json"
-    | "json_v2"
-    | "html"
-    | "markdown"
-    | "rag"
-    | "content"
-  )[];
+  method?: "GET" | "POST";
+  body?: string;
+  content_type?:
+    | "application/json"
+    | "application/x-www-form-urlencoded"
+    | "text/plain"
+    | "application/graphql";
+  advanced?: AdvancedOptions;
+  location?: LocationOptions;
+  cost_controls?: CostControls;
+  formats?: OutputFormat[];
   extraction_schema?: Record<string, unknown>;
+  extraction_prompt?: string;
+  extraction_provider?: "openai" | "anthropic" | "openrouter" | "groq";
+  extraction_profile?: ExtractionProfile;
+  extraction_template?: ExtractionProfile;
+  cache?: boolean;
+  include_raw_html?: boolean;
   timeout?: number;
   wait_for?: string;
-  cache?: boolean;
-  advanced?: AdvancedOptions;
 }
 
 export interface BatchRequest {
   urls: BatchItemRequest[];
+  session_id?: string;
   webhook_url?: string;
+  export?: {
+    integration_id: string;
+    prefix?: string;
+    format?: "jsonl" | "csv" | "json";
+  };
+  extraction_schema?: Record<string, unknown>;
+  extraction_prompt?: string;
+  extraction_provider?: "openai" | "anthropic" | "openrouter" | "groq";
+  extraction_profile?:
+    | "auto"
+    | "product"
+    | "article"
+    | "job_posting"
+    | "faq"
+    | "recipe"
+    | "event";
 }
 
 export interface BatchResponse {
@@ -379,11 +455,23 @@ export interface SessionListResponse {
   total: number;
 }
 
+export type SessionCookies =
+  | Record<string, string>
+  | Record<string, unknown>[];
+
 export interface SessionCreateRequest {
   name: string;
   domain: string;
-  cookies: Record<string, string>;
-  user_agent?: string;
+  cookies?: SessionCookies;
+  headers?: Record<string, string>;
+  consent: boolean;
+  expires_at?: string;
+  notes?: string;
+  auto_refresh_enabled?: boolean;
+  notify_before_expiry?: boolean;
+  notify_on_failure?: boolean;
+  organization_id?: string;
+  shared?: boolean;
 }
 
 export interface SessionCreateResponse {
@@ -425,14 +513,17 @@ export interface SessionDetailResponse {
 
 export interface SessionUpdateRequest {
   name?: string;
-  cookies?: Record<string, string>;
+  cookies?: SessionCookies;
   headers?: Record<string, string>;
   expires_at?: string;
   notes?: string;
+  auto_refresh_enabled?: boolean;
+  notify_before_expiry?: boolean;
+  notify_on_failure?: boolean;
 }
 
 export interface SessionRefreshRequest {
-  cookies?: Record<string, string>;
+  cookies?: SessionCookies;
   headers?: Record<string, string>;
 }
 
@@ -489,6 +580,23 @@ export interface RedirectHop {
   status_code: number;
 }
 
+/**
+ * Body of a 202 response to POST /api/v1/scrape: either an async job
+ * (sync=false) or a sync request downgraded because it outlived the
+ * synchronous wait window. Has no `billing` or `content`.
+ */
+export interface AsyncScrapeAccepted {
+  job_id: string;
+  poll_url?: string;
+  sync_downgraded?: boolean;
+  reason?: string;
+  credits_status?: string;
+  estimated_completion_s?: number;
+  suggestion?: string;
+  credits_note?: string;
+  status?: string;
+}
+
 export interface UnifiedScrapeResponse {
   job_id?: string;
   url: string;
@@ -512,6 +620,10 @@ export interface UnifiedScrapeResponse {
   filtered_content?: Record<string, unknown>;
   extraction_result?: Record<string, unknown>;
   action_results?: Record<string, unknown>[];
+  ocr_results?: Record<string, unknown>[];
+  captured_cookies?: Record<string, unknown>;
+  embeddings?: Record<string, unknown>;
+  content_hash?: string;
   warning?: string;
   domain_warning?: string;
   domain_difficulty?: Record<string, unknown>;
@@ -521,6 +633,15 @@ export interface UnifiedScrapeResponse {
   billing: BillingDetails;
   extraction_method?: string;
   version?: string;
+}
+
+/** Body of GET /api/v1/jobs/{job_id} (untyped in the OpenAPI spec). */
+export interface JobStatusResponse {
+  job_id?: string;
+  status: string;
+  error?: unknown;
+  result?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 export interface CostEstimate {
@@ -670,25 +791,22 @@ export interface UsageDomainEntry {
 }
 
 /**
- * Detailed usage breakdown returned by GET /api/v1/billing/usage.
- * Provides spending summaries for different time windows and the top domains
- * consuming the most credits.
+ * Account usage returned by GET /api/v1/usage: balance, credits consumed in
+ * the current billing period, tier and entitlement source.
  */
 export interface UsageResponse {
-  /** Credits consumed today (UTC day). */
-  today_credits: number;
-  /** Credits consumed in the current calendar week (Mon–Sun UTC). */
-  this_week_credits: number;
-  /** Credits consumed in the current calendar month. */
-  this_month_credits: number;
-  /** Total lifetime credits consumed across all time. */
-  total_credits: number;
-  /** Number of API requests made today. */
-  today_requests: number;
-  /** Number of API requests made this week. */
-  this_week_requests: number;
-  /** Top domains by credit consumption (up to 10 entries). */
-  top_domains: UsageDomainEntry[];
-  /** Timestamp of the oldest usage record included in totals. */
-  usage_since?: string;
+  /** Current balance in microcents (1,000,000 microcents = $1). */
+  balance_microcents: number;
+  /** Deprecated duplicate of the balance in legacy credit units. */
+  credits_available?: number;
+  /** Credits consumed in the current billing period. */
+  credits_used_month: number;
+  /** Account tier name. */
+  account_tier: string;
+  /** "balance" or "enterprise_override". */
+  entitlement_source: string;
+  /** Start of the current usage period (ISO 8601). */
+  period_start: string;
+  /** End of the current usage period (ISO 8601). */
+  period_end: string;
 }

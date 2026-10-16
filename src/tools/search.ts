@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { AlterLabClient } from "../client.js";
 import { type ApiError, formatErrorResult } from "../errors.js";
+import { crawlFormatEnum } from "./common.js";
 
 export const searchSchema = z.object({
   query: z
@@ -9,6 +10,13 @@ export const searchSchema = z.object({
     .min(1)
     .max(500)
     .describe("Search query (max 500 characters)"),
+  engine: z
+    .enum(["duckduckgo", "google", "bing"])
+    .optional()
+    .describe(
+      "Search engine (API default duckduckgo). duckduckgo costs $0.001/query; google and bing use " +
+        "browser rendering and cost $0.004/query.",
+    ),
   num_results: z
     .number()
     .int()
@@ -27,6 +35,7 @@ export const searchSchema = z.object({
     ),
   domain: z
     .string()
+    .max(253)
     .optional()
     .describe(
       "Restrict results to a specific domain (applied as site: prefix, e.g. 'docs.example.com')",
@@ -56,7 +65,7 @@ export const searchSchema = z.object({
         "Each page is billed at its scraping tier cost in addition to the base search fee.",
     ),
   formats: z
-    .array(z.enum(["text", "json", "json_v2", "html", "markdown"]))
+    .array(crawlFormatEnum)
     .optional()
     .describe("Output formats when scrape_results=true"),
   extraction_schema: z
@@ -67,8 +76,8 @@ export const searchSchema = z.object({
     .boolean()
     .optional()
     .describe(
-      "Enable safe search filtering to exclude adult content from results. " +
-        "Defaults to the search engine's own safe-search setting when omitted.",
+      "Safe search filtering to exclude adult content from results (API default true). " +
+        "Set false to disable.",
     ),
 });
 
@@ -76,12 +85,12 @@ export const searchDescription =
   "Search the web, find information online, look up any topic, or research a subject across the internet. " +
   "Returns search results with URLs, titles, and snippets from multiple search engines. " +
   "Uses AlterLab's SERP engine with Google/Bing/DuckDuckGo multi-engine failover for reliable results. " +
-  "Costs $0.001 per search query. " +
+  "Costs $0.001 per search query on the default duckduckgo engine; engine='google' or 'bing' costs $0.004 per query. " +
   "Set scrape_results=true to also scrape each result page (with anti-bot bypass) and get full content — " +
   "each page is billed at its normal scraping tier cost. " +
   "Use domain to restrict results to a specific site (equivalent to site: operator). " +
   "Use time_range to filter by recency (hour/day/week/month/year). " +
-  "Use safe_search=true to filter adult content from results.";
+  "Safe search is on by default; pass safe_search=false to disable it.";
 
 export async function handleSearch(
   client: AlterLabClient,
@@ -90,6 +99,7 @@ export async function handleSearch(
   try {
     const response = await client.search({
       query: params.query,
+      engine: params.engine,
       num_results: params.num_results,
       page: params.page,
       domain: params.domain,

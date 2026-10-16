@@ -7,9 +7,9 @@ import type { UsageResponse } from "../types.js";
 export const usageSchema = z.object({});
 
 export const usageDescription =
-  "Get a detailed spending breakdown for your AlterLab account — credits consumed today, this week, and this month, " +
-  "plus the top domains by credit consumption. " +
-  "Use this to audit costs, identify expensive domains, and track usage trends. " +
+  "Get account usage for the current billing period — balance, credits consumed this period, " +
+  "account tier and entitlement source. " +
+  "Use this to track spend against your plan; use alterlab_check_balance for deposit and spend totals. " +
   "No parameters required — uses your API key for identification.";
 
 export async function handleUsage(
@@ -29,26 +29,13 @@ export async function handleUsage(
 }
 
 function formatUsageResponse(usage: UsageResponse): string {
-  const parts: string[] = ["**Usage & Spending Breakdown**\n"];
+  const parts: string[] = ["**Usage**\n"];
 
-  parts.push("**Time Windows**");
-  parts.push(`- Today:      ${usage.today_credits} credits (${usage.today_requests ?? "—"} requests)`);
-  parts.push(`- This week:  ${usage.this_week_credits} credits (${usage.this_week_requests ?? "—"} requests)`);
-  parts.push(`- This month: ${usage.this_month_credits} credits`);
-  parts.push(`- All time:   ${usage.total_credits} credits`);
-
-  if (usage.top_domains && usage.top_domains.length > 0) {
-    parts.push("\n**Top Domains by Credit Consumption**");
-    for (const entry of usage.top_domains) {
-      parts.push(
-        `- ${entry.domain}: ${entry.credits_used} credits (${entry.requests} requests)`,
-      );
-    }
-  }
-
-  if (usage.usage_since) {
-    parts.push(`\n_Usage tracked since: ${usage.usage_since}_`);
-  }
+  parts.push(`- Balance: $${(usage.balance_microcents / 1_000_000).toFixed(4)}`);
+  parts.push(`- Credits used this period: ${usage.credits_used_month}`);
+  parts.push(`- Account tier: ${usage.account_tier}`);
+  parts.push(`- Entitlement source: ${usage.entitlement_source}`);
+  parts.push(`- Period: ${usage.period_start} to ${usage.period_end}`);
 
   parts.push("\nAdd funds: https://alterlab.io/dashboard/billing");
 

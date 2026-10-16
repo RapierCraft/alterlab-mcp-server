@@ -3,67 +3,24 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { AlterLabClient } from "../client.js";
 import { type ApiError, formatErrorResult } from "../errors.js";
 import { formatScrapeResponse, formatEstimateInline, formatBalanceWarning } from "../format.js";
-
-const tierEnum = z.enum(["1", "2", "3", "3.5", "4"]);
-
-const costControlsSchema = z
-  .object({
-    force_tier: tierEnum
-      .optional()
-      .describe(
-        "Pin execution to this exact tier, bypassing escalation " +
-          "(1=curl $0.0002, 2=http $0.0003, 3=stealth $0.002, 3.5=lightjs $0.0025, 4=browser $0.004). " +
-          "Use to guarantee a specific engine is used regardless of site difficulty.",
-      ),
-    max_tier: tierEnum
-      .optional()
-      .describe(
-        "Cap automatic escalation at this tier. Scrape will not escalate beyond it even if lower tiers fail. " +
-          "Cannot exceed force_tier when both are set.",
-      ),
-    max_credits: z
-      .number()
-      .positive()
-      .optional()
-      .describe(
-        "Hard spending cap for this request in credits. Request fails if cost would exceed this.",
-      ),
-    prefer_cost: z
-      .boolean()
-      .optional()
-      .describe(
-        "Optimize for cost — try cheaper tiers first, accept lower success probability.",
-      ),
-    prefer_speed: z
-      .boolean()
-      .optional()
-      .describe(
-        "Optimize for speed — skip to the most reliable tier for this domain.",
-      ),
-    fail_fast: z
-      .boolean()
-      .optional()
-      .describe(
-        "Return error instead of escalating to more expensive tiers on failure.",
-      ),
-    time_budget: z
-      .number()
-      .min(5)
-      .max(300)
-      .optional()
-      .describe(
-        "Total wall-clock budget in seconds for the entire tier escalation sequence (5–300s). " +
-          "Escalation stops when remaining budget is insufficient for the next tier attempt.",
-      ),
-  })
-  .optional()
-  .describe(
-    "Fine-grained cost and tier controls. Use to cap spending, pin a tier, or trade off cost vs speed. " +
-      "Prefer these over the top-level prefer_cost/prefer_speed/fail_fast fields for full control.",
-  );
+import type { UnifiedScrapeRequest } from "../types.js";
+import {
+  ADVANCED_KEYS,
+  FORMATS_DESCRIPTION,
+  advancedShape,
+  allFormatEnum,
+  compact,
+  contentTypeEnum,
+  costControlsSchema,
+  extractionProfileEnum,
+  extractionProviderEnum,
+  locationSchema,
+  modeEnum,
+  pickAdvanced,
+} from "./common.js";
 
 export const scrapeSchema = z.object({
-  url: z.string().url().describe("URL to scrape"),
+  url: z.string().url().max(2083).describe("URL to scrape"),
   method: z
     .enum(["GET", "POST"])
     .default("GET")
@@ -83,13 +40,7 @@ export const scrapeSchema = z.object({
         "For form submissions: URL-encoded key=value pairs (e.g., 'name=Alice&email=alice@example.com'). " +
         "Omit for GET requests.",
     ),
-  content_type: z
-    .enum([
-      "application/json",
-      "application/x-www-form-urlencoded",
-      "text/plain",
-      "application/graphql",
-    ])
+  content_type: contentTypeEnum
     .optional()
     .describe(
       "Content-Type header for the request body. " +
@@ -98,42 +49,40 @@ export const scrapeSchema = z.object({
         "Use 'application/x-www-form-urlencoded' for HTML form submissions. " +
         "Requires body to be set.",
     ),
-  mode: z
-    .enum(["auto", "html", "js", "pdf", "ocr"])
+  headers: z
+    .record(z.string(), z.string())
+    .optional()
+    .describe(
+      "Custom HTTP headers to send to the target URL. " +
+        "Hop-by-hop headers (Connection, Transfer-Encoding, Host, etc.) are not allowed.",
+    ),
+  mode: modeEnum
     .default("auto")
     .describe(
       "Scraping mode: auto (recommended), html, js (headless browser), pdf, or ocr",
     ),
   formats: z
-    .array(
-      z.enum(["text", "json", "json_v2", "html", "markdown", "rag", "raw", "content"]),
-    )
+    .array(allFormatEnum)
     .default(["markdown"])
-    .describe(
-      "Output formats. 'markdown' is best for LLM consumption. " +
-        "'json_v2' returns a structured section tree (headings + content blocks). " +
-        "'rag' returns chunked text optimized for retrieval-augmented generation. " +
-        "'raw' returns the raw response body without extraction. " +
-        "'content' returns body_markdown + content_hash + images + links for AI/KB pipelines.",
-    ),
+    .describe("Output formats. " + FORMATS_DESCRIPTION),
   extraction_schema: z
     .record(z.unknown())
     .optional()
     .describe(
       "JSON schema for structured extraction. " +
-        "The API extracts fields matching this schema from the scraped page using LLM. " +
+        "The API extracts fields matching this schema from the scraped page using LLM (+$0.001). " +
         "Result is returned in extraction_result. " +
         'Example: { "title": "string", "price": "number", "in_stock": "boolean" }',
     ),
   extraction_model: z
     .string()
+    .max(256)
     .nullish()
     .describe(
       "Per-request LLM model override in provider-specific format (e.g. 'gpt-4o', 'claude-opus-4-5-20251101', 'llama3-70b-8192'). " +
         "Overrides the model saved in your BYOK key settings for this request only.",
     ),
-  extraction_provider: z
-    .enum(["openai", "anthropic", "openrouter", "groq"])
+  extraction_provider: extractionProviderEnum
     .optional()
     .describe(
       "LLM provider to use for extraction. Selects the matching BYOK key registered at " +
@@ -149,35 +98,29 @@ export const scrapeSchema = z.object({
         "Mutually exclusive with extraction_schema. " +
         'Example: "Extract the product name, price, and availability".',
     ),
-  extraction_profile: z
-    .enum([
-      "auto",
-      "product",
-      "article",
-      "job_posting",
-      "faq",
-      "recipe",
-      "event",
-      "ecommerce_homepage",
-      "directory_listing",
-    ])
+  extraction_profile: extractionProfileEnum
     .optional()
     .describe(
       "Pre-built extraction schema template. " +
-        "auto: detect best template. product: e-commerce product details. " +
+        "auto: detect best template (API default). product: e-commerce product details. " +
         "article: news/blog article fields. job_posting: job listing fields. " +
         "faq: FAQ entries. recipe: recipe ingredients and instructions. " +
         "event: event details. ecommerce_homepage: homepage product listings. " +
-        "directory_listing: directory/listing page entries.",
+        "directory_listing: directory/listing page entries. " +
+        "Mutually exclusive with extraction_template.",
+    ),
+  extraction_template: extractionProfileEnum
+    .optional()
+    .describe(
+      "Shorthand alias for extraction_profile — selects the same pre-built template. " +
+        "Mutually exclusive with extraction_profile.",
     ),
   template: z
     .string()
     .optional()
     .describe(
-      "Named extraction template to apply to the scrape result. " +
-        "Accepts standard template names (e.g. 'product', 'article', 'job_posting') " +
-        "or a custom template name registered in your account. " +
-        "When provided, routes the request through template-based extraction.",
+      "DEPRECATED alias for extraction_template, kept for backward compatibility. " +
+        "Sent to the API as extraction_template; prefer extraction_template.",
     ),
   evidence: z
     .boolean()
@@ -194,6 +137,14 @@ export const scrapeSchema = z.object({
       "Apply quality filtering to extracted content. When false (default), returns all parsed content " +
         "without quality thresholds (lossless mode). When true, filters low-quality boilerplate.",
     ),
+  promote_schema_org: z
+    .boolean()
+    .optional()
+    .describe(
+      "Use Schema.org JSON-LD/Microdata as the primary structured-data source when present (API default true). " +
+        "Promotes machine-readable metadata embedded in the page over LLM extraction. " +
+        "Most effective on e-commerce, recipe, and news article pages.",
+    ),
   cache: z
     .boolean()
     .optional()
@@ -203,157 +154,13 @@ export const scrapeSchema = z.object({
     ),
   cache_ttl: z
     .number()
+    .int()
     .min(60)
     .max(86400)
     .optional()
     .describe(
       "Cache TTL in seconds (60–86400). Defaults to 3600 (60 min) when cache=true. " +
         "Requires cache=true.",
-    ),
-  render_js: z
-    .union([z.boolean(), z.literal("auto")])
-    .default(false)
-    .describe(
-      "Render JavaScript using headless browser (forces Tier 4 minimum — no separate add-on charge). " +
-        "Required for JS-heavy sites. Set to 'auto' for smart detection (probes each page, " +
-        "only renders JS-heavy pages with browser — saves 30-60% on mixed sites).",
-    ),
-  use_proxy: z
-    .boolean()
-    .default(false)
-    .describe(
-      "Route through premium proxy (+$0.0002). Helps bypass geo-restrictions and anti-bot",
-    ),
-  proxy_country: z
-    .string()
-    .optional()
-    .describe(
-      "ISO country code for geo-targeting (e.g., 'US', 'DE'). Requires use_proxy=true",
-    ),
-  wait_for: z
-    .string()
-    .optional()
-    .describe(
-      "CSS selector to wait for before extracting content (e.g., '#main-content')",
-    ),
-  timeout: z
-    .number()
-    .min(1)
-    .max(300)
-    .default(90)
-    .describe("Request timeout in seconds (1-300)"),
-  max_response_bytes: z
-    .number()
-    .int()
-    .min(0)
-    .max(52_428_800)
-    .default(5_242_880)
-    .optional()
-    .describe(
-      "Soft cap on raw response body size in bytes. " +
-        "When the downloaded HTML exceeds this value it is truncated before extraction. " +
-        "Default: 5 MB (5242880). Set to 0 for no limit. Maximum: 50 MB (52428800). " +
-        "Useful for very large pages where you only need the beginning of the content.",
-    ),
-  include_raw_html: z
-    .boolean()
-    .default(false)
-    .describe("Include raw HTML in the response alongside formatted content"),
-  session_id: z
-    .string()
-    .uuid()
-    .optional()
-    .describe(
-      "UUID of a stored session for authenticated scraping. " +
-        "Use alterlab_list_sessions to find available sessions. " +
-        "The session's cookies will be injected into the request.",
-    ),
-  cookies: z
-    .record(z.string(), z.string())
-    .optional()
-    .describe(
-      "Inline cookies as key-value pairs for authenticated scraping " +
-        '(e.g., {"session_token": "abc123"}). ' +
-        "Use this for one-off requests; use session_id for reusable sessions.",
-    ),
-  scroll_to_load: z
-    .boolean()
-    .default(false)
-    .describe(
-      "Scroll page to trigger lazy-loaded content (requires render_js). " +
-        "Performs explicit viewport-height scrolls to load dynamic content. Adds ~2-3s latency.",
-    ),
-  scroll_count: z
-    .number()
-    .int()
-    .min(1)
-    .max(10)
-    .default(3)
-    .optional()
-    .describe(
-      "Number of scroll iterations when scroll_to_load is enabled (1-10, default 3)",
-    ),
-  remove_cookie_banners: z
-    .boolean()
-    .default(true)
-    .describe(
-      "Remove cookie consent banners from HTML before content extraction (free, enabled by default)",
-    ),
-  block_images: z
-    .boolean()
-    .default(false)
-    .describe(
-      "Block image downloads during browser rendering. " +
-        "Reduces proxy bandwidth and speeds up scrapes. Only effective with render_js=true.",
-    ),
-  location: z
-    .object({
-      country: z
-        .string()
-        .length(2)
-        .optional()
-        .describe(
-          "ISO 3166-1 alpha-2 country code for geo-targeting (e.g., 'US', 'DE', 'JP'). " +
-            "Routes request through a proxy in the specified country.",
-        ),
-      language: z
-        .string()
-        .min(2)
-        .max(5)
-        .optional()
-        .describe(
-          "ISO 639-1 language code (e.g., 'en', 'de', 'ja'). " +
-            "Sets the Accept-Language header and browser locale.",
-        ),
-    })
-    .optional()
-    .describe(
-      "Geo-targeting parameters for localized content scraping. " +
-        "Controls proxy country routing, Accept-Language header, and browser locale.",
-    ),
-  prefer_cost: z
-    .boolean()
-    .optional()
-    .describe(
-      "Optimize for lowest cost — try cheaper tiers first before escalating. " +
-        "Best for non-time-sensitive scrapes where minimizing credit spend matters. " +
-        "Mutually exclusive intent with prefer_speed.",
-    ),
-  prefer_speed: z
-    .boolean()
-    .optional()
-    .describe(
-      "Optimize for speed — skip to a reliable tier immediately instead of escalating from Tier 1. " +
-        "Best for time-sensitive scrapes where latency matters more than cost. " +
-        "Mutually exclusive intent with prefer_cost.",
-    ),
-  fail_fast: z
-    .boolean()
-    .optional()
-    .describe(
-      "Fail immediately if the page requires an expensive tier (browser/captcha) instead of auto-escalating. " +
-        "Use this to protect against unexpected credit spend on protected pages. " +
-        "Returns an error with the required tier instead of automatically upgrading.",
     ),
   force_refresh: z
     .boolean()
@@ -362,15 +169,108 @@ export const scrapeSchema = z.object({
       "Bypass the cache and always fetch a fresh copy of the page. " +
         "Use when you need real-time content and a cached result would be stale.",
     ),
-  promote_schema_org: z
+  include_raw_html: z
+    .boolean()
+    .default(false)
+    .describe("Include raw HTML in the response alongside formatted content"),
+  max_response_bytes: z
+    .number()
+    .int()
+    .min(0)
+    .max(52_428_800)
+    .optional()
+    .describe(
+      "Soft cap on raw response body size in bytes. " +
+        "When the downloaded HTML exceeds this value it is truncated before extraction. " +
+        "Default: 5 MB (5242880). Set to 0 for no limit. Maximum: 50 MB (52428800). " +
+        "Useful for very large pages where you only need the beginning of the content.",
+    ),
+  timeout: z
+    .number()
+    .int()
+    .min(1)
+    .max(300)
+    .default(90)
+    .describe("Request timeout in seconds (1-300)"),
+  wait_for: z
+    .string()
+    .optional()
+    .describe(
+      "CSS selector to wait for before extracting content (e.g., '#main-content')",
+    ),
+  wait_until: z
+    .string()
+    .optional()
+    .describe(
+      "Page load event to wait for before extracting (networkidle, domcontentloaded or load; API default networkidle)",
+    ),
+  screenshot: z
     .boolean()
     .optional()
     .describe(
-      "Use Schema.org JSON-LD/Microdata as the primary structured-data source when present. " +
-        "Promotes machine-readable metadata embedded in the page over LLM extraction. " +
-        "Most effective on e-commerce, recipe, and news article pages.",
+      "Capture a full-page screenshot (+$0.0002, requires render_js). The URL is returned as screenshot_url. " +
+        "Use alterlab_screenshot to get the image inline.",
     ),
-  cost_controls: costControlsSchema,
+  enable_scroll: z
+    .boolean()
+    .nullish()
+    .describe(
+      "Force scrolling for lazy-load images. true: always scroll (+5-10s), false: never scroll, " +
+        "omit: auto (scroll unless social media site).",
+    ),
+  pdf_format: z
+    .string()
+    .optional()
+    .describe("Output format for mode='pdf' extraction (API default 'markdown')"),
+  ocr_language: z
+    .string()
+    .optional()
+    .describe("Tesseract language code for OCR (API default 'eng')"),
+  sync_policy: z
+    .enum(["auto", "wait_until_deadline"])
+    .optional()
+    .describe(
+      "Synchronous wait policy. 'auto' (default) may return an early 202 with a job_id for predicted T3/T4 jobs; " +
+        "'wait_until_deadline' keeps the connection open until the terminal result or the safe sync deadline (~85s).",
+    ),
+  embeddings: z
+    .object({
+      enabled: z.boolean().optional(),
+      model: z
+        .enum(["text-embedding-3-small", "text-embedding-3-large"])
+        .optional(),
+      chunk_size: z.number().int().min(64).max(8191).optional(),
+      chunk_overlap: z.number().int().min(0).max(2048).optional(),
+    })
+    .optional()
+    .describe(
+      "Chunk the scraped text and embed it with OpenAI models (+$0.001 per page). " +
+        "Set enabled=true; model, chunk_size (64-8191) and chunk_overlap (0-2048) are optional.",
+    ),
+  ...advancedShape,
+  location: locationSchema.optional(),
+  prefer_cost: z
+    .boolean()
+    .optional()
+    .describe(
+      "Optimize for lowest cost — try cheaper tiers first before escalating. " +
+        "Shorthand for cost_controls.prefer_cost. Mutually exclusive intent with prefer_speed.",
+    ),
+  prefer_speed: z
+    .boolean()
+    .optional()
+    .describe(
+      "Optimize for speed — skip to a reliable tier immediately instead of escalating from Tier 1. " +
+        "Shorthand for cost_controls.prefer_speed. Mutually exclusive intent with prefer_cost.",
+    ),
+  fail_fast: z
+    .boolean()
+    .optional()
+    .describe(
+      "Fail immediately if the page requires an expensive tier (browser/captcha) instead of auto-escalating. " +
+        "Shorthand for cost_controls.fail_fast. Returns an error with the required tier instead of upgrading.",
+    ),
+  cost_controls: costControlsSchema.optional(),
   estimate_first: z
     .boolean()
     .default(false)
@@ -387,26 +287,34 @@ export const scrapeDescription =
   "or fetch content from dynamic single-page apps. " +
   "Turn any URL into clean, LLM-ready markdown — or get text, HTML, JSON, and structured sections. " +
   "Automatically bypasses anti-bot protection (Cloudflare, Akamai, DataDome, PerimeterX, hCaptcha) " +
-  "with intelligent 4-tier escalation — no manual configuration needed. " +
-  "Cost-efficient: starts at $0.0001/page for simple sites, auto-escalates only when protection is detected. " +
+  "with intelligent tier escalation — no manual configuration needed. " +
+  "Cost-efficient: tier 1 (curl) is $0.0002/page, tier 2 (http) $0.0003, tier 3 (stealth) $0.002, " +
+  "tier 3.5 (lightjs) $0.0025, tier 4 (browser) $0.004; you only pay for the tier that succeeds. " +
+  "Add-ons: screenshot +$0.0002, generate_pdf +$0.0004, ocr +$0.001, use_proxy +$0.0002, " +
+  "LLM extraction +$0.001, embeddings +$0.001; method='POST' costs 1.5x. " +
   "Returns markdown by default — optimized for LLM context. " +
   "Supports GET (default) and POST via the method parameter. " +
   "Use method='POST' with body for GraphQL APIs, REST endpoints, and form submissions. " +
   "Use content_type to set the POST body Content-Type (json, urlencoded, graphql, plain). " +
+  "Use headers to send custom HTTP headers to the target. " +
   "Use render_js=true to scrape dynamic pages, JavaScript-heavy sites (React, Angular, Vue, SPAs). " +
   "Use render_js='auto' for mixed sites to detect JS needs per-page (saves 30-60%). " +
-  "Use use_proxy=true for geo-restricted or heavily protected sites. " +
+  "Use actions (click, fill, press, scroll, wait_for, evaluate, ...) to drive the page before extraction. " +
+  "Use use_proxy=true for geo-restricted or heavily protected sites; use_own_proxy for your own proxy integration. " +
+  "Use sticky_session to reuse cookies and exit IP across calls. " +
+  "Use skip_tls_verification only for sites with broken certificates. " +
   "Use formats=['json_v2'] for a structured section tree (headings + content blocks). " +
   "Use formats=['rag'] for chunked text optimized for RAG pipelines. " +
   "Use formats=['raw'] for the raw response body without extraction. " +
   "Use formats=['content'] for AI/KB pipelines — returns body_markdown, content_hash, images, links. " +
   "Use extraction_schema to extract structured fields from the page using LLM. " +
   "Use extraction_prompt for natural language extraction instructions. " +
-  "Use extraction_profile for pre-built templates (product, article, job_posting, etc.). " +
+  "Use extraction_profile or extraction_template for pre-built templates (product, article, job_posting, etc.). " +
   "Use evidence=true to include source passages alongside extracted fields. " +
+  "Use embeddings to chunk and embed the scraped text. " +
   "Use cache=true and cache_ttl to enable response caching. " +
   "Use cost_controls to cap spending, pin a tier, or set a time budget. " +
-  "Supports authenticated scraping via session_id or inline cookies. " +
+  "Supports authenticated scraping via session_id, inline cookies or session_headers. " +
   "Use scroll_to_load=true for infinite-scroll pages. " +
   "Use location.country to scrape geo-targeted content from any region. " +
   "Use prefer_cost=true to minimize credit spend (starts from cheapest tier). " +
@@ -414,26 +322,117 @@ export const scrapeDescription =
   "Use fail_fast=true to error instead of auto-escalating to expensive tiers. " +
   "Use force_refresh=true to bypass cache and always fetch live content. " +
   "Use promote_schema_org=true to prefer Schema.org JSON-LD over LLM extraction on structured pages. " +
-  "Use estimate_first=true to run a free cost estimate before scraping (prepended to the result).";
+  "Use estimate_first=true to run a free cost estimate before scraping (prepended to the result). " +
+  "If a long-running scrape returns a job_id instead of content, the job continues server-side.";
+
+type ScrapeParams = z.infer<typeof scrapeSchema>;
+
+/** Merge the top-level prefer_cost/prefer_speed/fail_fast shorthands into cost_controls (explicit cost_controls wins). */
+function buildCostControls(params: ScrapeParams) {
+  const merged = compact({
+    prefer_cost: params.prefer_cost,
+    prefer_speed: params.prefer_speed,
+    fail_fast: params.fail_fast,
+    ...(params.cost_controls ?? {}),
+  });
+  return Object.keys(merged).length > 0 ? merged : undefined;
+}
+
+/**
+ * Translate flat tool parameters into the API's UnifiedScrapeRequest body.
+ * Exported for tests.
+ */
+export function buildScrapeRequest(params: ScrapeParams): UnifiedScrapeRequest {
+  const advanced = pickAdvanced(params, ADVANCED_KEYS);
+  advanced.markdown = params.formats.includes("markdown");
+  if (params.screenshot !== undefined) advanced.screenshot = params.screenshot;
+
+  return {
+    ...compact({
+      url: params.url,
+      method: params.method,
+      body: params.body,
+      content_type: params.content_type,
+      headers: params.headers,
+      mode: params.mode,
+      formats: params.formats,
+      sync: true,
+      sync_policy: params.sync_policy,
+      timeout: params.timeout,
+      max_response_bytes: params.max_response_bytes,
+      include_raw_html: params.include_raw_html,
+      wait_for: params.wait_for,
+      wait_until: params.wait_until,
+      screenshot: params.screenshot,
+      enable_scroll: params.enable_scroll ?? undefined,
+      pdf_format: params.pdf_format,
+      ocr_language: params.ocr_language,
+      location: params.location,
+      extraction_schema: params.extraction_schema,
+      extraction_prompt: params.extraction_prompt,
+      extraction_model: params.extraction_model ?? undefined,
+      extraction_provider: params.extraction_provider,
+      extraction_profile: params.extraction_profile,
+      extraction_template:
+        params.extraction_template ??
+        (params.template as UnifiedScrapeRequest["extraction_template"]),
+      evidence: params.evidence,
+      filter_content: params.filter_content,
+      cache: params.cache,
+      cache_ttl: params.cache_ttl,
+      force_refresh: params.force_refresh,
+      promote_schema_org: params.promote_schema_org,
+      embeddings: params.embeddings,
+      cost_controls: buildCostControls(params),
+    }),
+    advanced,
+  } as UnifiedScrapeRequest;
+}
+
+/**
+ * Cost-estimate request for the same scrape. The estimate endpoint prices from
+ * url, mode, method, formats and the cost-bearing advanced flags only.
+ */
+export function buildEstimateRequest(params: {
+  url: string;
+  mode?: ScrapeParams["mode"];
+  method?: ScrapeParams["method"];
+  formats?: ScrapeParams["formats"];
+  render_js?: ScrapeParams["render_js"];
+  use_proxy?: boolean;
+  use_own_proxy?: boolean;
+  screenshot?: boolean;
+  generate_pdf?: boolean;
+  ocr?: boolean;
+}): UnifiedScrapeRequest {
+  return {
+    ...compact({
+      url: params.url,
+      mode: params.mode,
+      method: params.method,
+      formats: params.formats,
+    }),
+    advanced: compact({
+      render_js: params.render_js,
+      use_proxy: params.use_proxy,
+      use_own_proxy: params.use_own_proxy,
+      screenshot: params.screenshot,
+      generate_pdf: params.generate_pdf,
+      ocr: params.ocr,
+    }),
+  } as UnifiedScrapeRequest;
+}
 
 export async function handleScrape(
   client: AlterLabClient,
-  params: z.infer<typeof scrapeSchema>,
+  params: ScrapeParams,
 ): Promise<CallToolResult> {
   // Optional pre-flight cost estimate — runs before the scrape, no credits charged.
   // On failure, degrade gracefully: prepend a warning and continue with the scrape.
   let estimatePrefix = "";
   if (params.estimate_first) {
     try {
-      const estimate = await client.estimate({
-        url: params.url,
-        mode: params.mode,
-        formats: params.formats,
-        advanced: {
-          render_js: typeof params.render_js === "boolean" ? params.render_js : false,
-          use_proxy: params.use_proxy,
-        },
-      });
+      const estimate = await client.estimate(buildEstimateRequest(params));
       estimatePrefix = formatEstimateInline(estimate) + "\n";
     } catch {
       estimatePrefix =
@@ -442,48 +441,7 @@ export async function handleScrape(
   }
 
   try {
-    const response = await client.scrape({
-      url: params.url,
-      method: params.method,
-      body: params.body,
-      content_type: params.content_type,
-      mode: params.mode,
-      formats: params.formats,
-      sync: true,
-      timeout: params.timeout,
-      max_response_bytes: params.max_response_bytes,
-      include_raw_html: params.include_raw_html,
-      wait_for: params.wait_for,
-      session_id: params.session_id,
-      cookies: params.cookies,
-      location: params.location,
-      extraction_schema: params.extraction_schema,
-      extraction_prompt: params.extraction_prompt,
-      extraction_model: params.extraction_model ?? undefined,
-      extraction_provider: params.extraction_provider,
-      extraction_profile: params.extraction_profile,
-      template: params.template,
-      evidence: params.evidence,
-      filter_content: params.filter_content,
-      cache: params.cache,
-      cache_ttl: params.cache_ttl,
-      prefer_cost: params.prefer_cost,
-      prefer_speed: params.prefer_speed,
-      fail_fast: params.fail_fast,
-      force_refresh: params.force_refresh,
-      promote_schema_org: params.promote_schema_org,
-      cost_controls: params.cost_controls,
-      advanced: {
-        render_js: params.render_js,
-        use_proxy: params.use_proxy,
-        proxy_country: params.proxy_country,
-        markdown: params.formats.includes("markdown"),
-        scroll_to_load: params.scroll_to_load,
-        scroll_count: params.scroll_count,
-        remove_cookie_banners: params.remove_cookie_banners,
-        block_images: params.block_images,
-      },
-    });
+    const response = await client.scrape(buildScrapeRequest(params));
 
     const balanceWarningSuffix = formatBalanceWarning(client.getLastBalanceWarning());
     return {
