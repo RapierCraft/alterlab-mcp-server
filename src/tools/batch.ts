@@ -2,45 +2,105 @@ import { z } from "zod";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { AlterLabClient } from "../client.js";
 import { type ApiError, formatErrorResult } from "../errors.js";
+import type { BatchItemRequest } from "../types.js";
+import {
+  FORMATS_DESCRIPTION,
+  advancedShape,
+  allFormatEnum,
+  batchExtractionProfileEnum,
+  compact,
+  contentTypeEnum,
+  costControlsSchema,
+  extractionProfileEnum,
+  extractionProviderEnum,
+  locationSchema,
+  modeEnum,
+} from "./common.js";
 
 // ============================================================================
 // Submit Batch
 // ============================================================================
 
-const batchItemSchema = z.object({
-  url: z.string().url().describe("URL to scrape"),
-  mode: z
-    .enum(["auto", "html", "js", "pdf", "ocr"])
-    .default("auto")
+export const batchItemSchema = z.object({
+  url: z.string().url().max(2083).describe("URL to scrape"),
+  mode: modeEnum.optional().describe("Scraping mode for this URL (API default auto)"),
+  method: z
+    .enum(["GET", "POST"])
     .optional()
-    .describe("Scraping mode for this URL"),
+    .describe("HTTP method for this URL. POST costs 1.5x the base tier price."),
+  body: z.string().optional().describe("Request body for POST requests to this URL"),
+  content_type: contentTypeEnum
+    .optional()
+    .describe("Content-Type of the POST body for this URL"),
   formats: z
-    .array(z.enum(["text", "json", "json_v2", "html", "markdown", "rag"]))
+    .array(allFormatEnum)
     .optional()
-    .describe("Output formats for this URL (overrides batch-level formats)"),
+    .describe("Output formats for this URL. " + FORMATS_DESCRIPTION),
   extraction_schema: z
     .record(z.unknown())
     .optional()
     .describe("JSON schema for structured extraction from this URL"),
-  render_js: z.boolean().optional().describe("Render JavaScript for this URL"),
-  use_proxy: z.boolean().optional().describe("Use premium proxy for this URL"),
+  extraction_prompt: z
+    .string()
+    .max(2000)
+    .optional()
+    .describe("Natural language extraction instruction for this URL"),
+  extraction_provider: extractionProviderEnum
+    .optional()
+    .describe("BYOK LLM provider for extraction on this URL"),
+  extraction_profile: extractionProfileEnum
+    .optional()
+    .describe("Pre-built extraction profile for this URL (mutually exclusive with extraction_template)"),
+  extraction_template: extractionProfileEnum
+    .optional()
+    .describe("Alias for extraction_profile (mutually exclusive with it)"),
+  advanced: z
+    .object({
+      ...advancedShape,
+      screenshot: z
+        .boolean()
+        .optional()
+        .describe("Capture a full-page screenshot of this URL (+$0.0002, requires render_js)"),
+      markdown: z
+        .boolean()
+        .optional()
+        .describe("Extract content as Markdown for this URL (free)"),
+    })
+    .optional()
+    .describe(
+      "Advanced scrape options for this URL (render_js, use_proxy, use_own_proxy, actions, session_id, " +
+        "cookies, skip_tls_verification, sticky_session, ...). Same fields as the alterlab_scrape parameters of the same name.",
+    ),
+  location: locationSchema
+    .optional()
+    .describe("Geo-targeting for this URL (country, language)"),
+  cost_controls: costControlsSchema
+    .optional()
+    .describe("Cost and tier controls for this URL (max_tier, force_tier, max_credits, ...)"),
+  render_js: z
+    .union([z.boolean(), z.literal("auto")])
+    .optional()
+    .describe("Shortcut for advanced.render_js for this URL"),
+  use_proxy: z
+    .boolean()
+    .optional()
+    .describe("Shortcut for advanced.use_proxy for this URL"),
   timeout: z
     .number()
     .int()
     .min(1)
     .max(300)
-    .default(90)
     .optional()
-    .describe("Timeout in seconds for this URL"),
+    .describe("Timeout in seconds for this URL (1-300, API default 90)"),
   wait_for: z
     .string()
     .optional()
     .describe("CSS selector to wait for before extracting content"),
-  cache: z
+  cache: z.boolean().optional().describe("Enable caching for this URL"),
+  include_raw_html: z
     .boolean()
-    .default(false)
     .optional()
-    .describe("Enable caching for this URL"),
+    .describe("Include raw HTML in the result for this URL"),
 });
 
 export const batchSchema = z.object({
@@ -49,22 +109,71 @@ export const batchSchema = z.object({
     .min(1)
     .max(100)
     .describe("List of URLs to scrape (max 100)"),
+  session_id: z
+    .string()
+    .uuid()
+    .optional()
+    .describe(
+      "UUID of a stored session applied to every URL in the batch (see alterlab_list_sessions)",
+    ),
   webhook_url: z
     .string()
     .url()
+    .max(2083)
     .optional()
     .describe(
       "Webhook URL to receive batch.completed event when all jobs finish",
     ),
+  export: z
+    .object({
+      integration_id: z
+        .string()
+        .describe("ID of a storage integration (S3/R2/GCS) configured in the dashboard"),
+      prefix: z.string().max(500).optional().describe("Object key prefix for exported files"),
+      format: z.enum(["jsonl", "csv", "json"]).optional().describe("Export file format (API default jsonl)"),
+    })
+    .optional()
+    .describe("Export batch results to a storage integration when the batch finishes"),
+  extraction_schema: z
+    .record(z.unknown())
+    .optional()
+    .describe("Batch-level JSON schema for structured extraction applied to every URL"),
+  extraction_prompt: z
+    .string()
+    .max(2000)
+    .optional()
+    .describe("Batch-level natural language extraction instruction"),
+  extraction_provider: extractionProviderEnum
+    .optional()
+    .describe("Batch-level BYOK LLM provider for extraction"),
+  extraction_profile: batchExtractionProfileEnum
+    .optional()
+    .describe("Batch-level pre-built extraction profile applied to every URL"),
 });
 
 export const batchDescription =
   "Scrape up to 100 URLs in parallel with a single request — much faster and more efficient than sequential alterlab_scrape calls. " +
-  "Each URL automatically gets anti-bot bypass protection (Cloudflare, DataDome, etc.) at its own tier level. " +
+  "Each URL automatically gets anti-bot bypass protection (Cloudflare, DataDome, etc.) at its own tier level " +
+  "(tier 1 $0.0002 ... tier 4 $0.004 per URL). " +
   "Returns a batch_id immediately — use alterlab_batch_status to poll results. " +
-  "Each URL can have its own mode, formats, extraction_schema, and options. " +
+  "Each URL can have its own mode, method/body, formats, extraction options, advanced options, location and cost_controls. " +
+  "Batch-level session_id, extraction_* and export apply to the whole batch. " +
   "Credits are pre-debited based on estimated cost; unused credits are refunded on completion. " +
   "Use this whenever you need to scrape more than 2-3 URLs.";
+
+/** Translate a batch item's tool parameters into the API's BatchItemRequest. Exported for tests. */
+export function buildBatchItem(item: z.infer<typeof batchItemSchema>): BatchItemRequest {
+  const { render_js, use_proxy, advanced, ...rest } = item;
+  const mergedAdvanced = compact({
+    ...(advanced ?? {}),
+    ...(render_js !== undefined && advanced?.render_js === undefined ? { render_js } : {}),
+    ...(use_proxy !== undefined && advanced?.use_proxy === undefined ? { use_proxy } : {}),
+  });
+  return {
+    ...compact(rest),
+    ...(Object.keys(mergedAdvanced).length > 0 ? { advanced: mergedAdvanced } : {}),
+  } as BatchItemRequest;
+}
 
 export async function handleBatch(
   client: AlterLabClient,
@@ -72,20 +181,16 @@ export async function handleBatch(
 ): Promise<CallToolResult> {
   try {
     const response = await client.submitBatch({
-      urls: params.urls.map((item) => ({
-        url: item.url,
-        mode: item.mode,
-        formats: item.formats,
-        extraction_schema: item.extraction_schema,
-        timeout: item.timeout,
-        wait_for: item.wait_for,
-        cache: item.cache,
-        advanced: {
-          render_js: item.render_js,
-          use_proxy: item.use_proxy,
-        },
-      })),
-      webhook_url: params.webhook_url,
+      urls: params.urls.map(buildBatchItem),
+      ...compact({
+        session_id: params.session_id,
+        webhook_url: params.webhook_url,
+        export: params.export,
+        extraction_schema: params.extraction_schema,
+        extraction_prompt: params.extraction_prompt,
+        extraction_provider: params.extraction_provider,
+        extraction_profile: params.extraction_profile,
+      }),
     });
 
     const text =

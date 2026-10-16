@@ -68,9 +68,9 @@ AlterLab uses a multi-tier scraping architecture. It automatically selects the c
 
 1. **Curl** ($0.0002/req) &mdash; Direct HTTP for static pages, RSS feeds, public APIs
 2. **HTTP** ($0.0003/req) &mdash; TLS fingerprint rotation for moderately protected sites
-3. **Stealth** ($0.0005/req) &mdash; Browser impersonation for Cloudflare/DataDome-protected sites
-4. **Light JS** ($0.0007/req) &mdash; Lightweight JS extraction from server-rendered HTML
-5. **Browser** ($0.001/req) &mdash; Full headless Chromium for JavaScript-heavy SPAs
+3. **Stealth** ($0.002/req) &mdash; Browser impersonation for Cloudflare/DataDome-protected sites
+4. **Light JS** ($0.0025/req) &mdash; Lightweight JS extraction from server-rendered HTML
+5. **Browser** ($0.004/req) &mdash; Full headless Chromium for JavaScript-heavy SPAs
 
 Auto mode starts at Tier 1 and escalates only when blocked. Most websites resolve at Tiers 1-2, so **$1 gets you 1,000 to 5,000 scrapes** depending on the sites you target.
 
@@ -160,19 +160,37 @@ Scrape a URL and return its content as markdown, text, HTML, or JSON. Automatica
 |---|---|---|---|
 | `url` | string | required | URL to scrape |
 | `mode` | `auto` \| `html` \| `js` \| `pdf` \| `ocr` | `auto` | Scraping mode |
-| `formats` | `(text\|json\|html\|markdown)[]` | `["markdown"]` | Output formats |
-| `render_js` | boolean | `false` | Use headless browser (+3 credits) |
-| `use_proxy` | boolean | `false` | Premium proxy (+1 credit) |
-| `proxy_country` | string | &mdash; | ISO country code for geo-targeting (e.g., `US`, `DE`) |
-| `wait_for` | string | &mdash; | CSS selector to wait for before extraction |
-| `timeout` | number | `90` | Timeout in seconds (1-300) |
-| `include_raw_html` | boolean | `false` | Include raw HTML alongside formatted content |
-| `session_id` | string (UUID) | &mdash; | Stored session ID for authenticated scraping |
-| `cookies` | `Record<string, string>` | &mdash; | Inline cookies for one-off authenticated requests |
+| `method` / `body` / `content_type` / `headers` | enum / string / enum / object | `GET` | POST support (1.5x cost) and custom target headers |
+| `formats` | `(text\|json\|json_v2\|html\|markdown\|rag\|content\|raw)[]` | `["markdown"]` | Output formats |
+| `extraction_schema` / `extraction_prompt` | object / string | &mdash; | LLM extraction (+$0.001) |
+| `extraction_profile` / `extraction_template` | enum | &mdash; | `auto`, `product`, `article`, `job_posting`, `faq`, `recipe`, `event`, `ecommerce_homepage`, `directory_listing` (`template` is a deprecated alias) |
+| `extraction_provider` / `extraction_model` | enum / string | &mdash; | BYOK LLM selection |
+| `evidence`, `promote_schema_org`, `filter_content` | boolean | &mdash; | Extraction behaviour |
+| `cache`, `cache_ttl`, `force_refresh` | boolean / number / boolean | &mdash; | Response caching (`cache_ttl` 60-86400) |
+| `render_js` | boolean \| `"auto"` | API default | Headless browser (forces Browser tier, $0.004) |
+| `use_proxy`, `proxy_country` | boolean, string | &mdash; | Premium proxy (+$0.0002) and geo-targeting |
+| `use_own_proxy`, `use_system_proxy`, `proxy_integration_id` | boolean, boolean, string | &mdash; | Bring-your-own-proxy selection |
+| `skip_tls_verification` | boolean | &mdash; | Omit (recommended) = verify, fall back on invalid certs; `true` skip, `false` require valid cert |
+| `wait_for`, `wait_until`, `wait_condition` | string | &mdash; | Selector / load-event waits |
+| `actions` | object[] (max 20) | &mdash; | Browser actions: `wait`, `wait_for`, `click`, `fill`, `press`, `scroll`, `infinite_scroll`, `screenshot`, `evaluate` |
+| `screenshot`, `generate_pdf`, `ocr` | boolean | &mdash; | Add-ons (+$0.0002 / +$0.0004 / +$0.001) |
+| `scroll_to_load`, `scroll_count`, `enable_scroll` | boolean / 1-10 / boolean | &mdash; | Lazy-load handling |
+| `include_iframes`, `flatten_shadow_dom`, `block_images`, `remove_cookie_banners` | boolean | &mdash; | Rendering options |
+| `section_filter` | object | &mdash; | Filter for `json_v2` sections |
+| `session_id`, `cookies`, `session_headers` | UUID, object, object | &mdash; | Authenticated scraping |
+| `sticky_session`, `sticky_session_ttl` | string, 300-7200 | &mdash; | Reuse cookies and exit IP across calls (paid plans) |
+| `location` | `{country, language}` | &mdash; | Geo-targeting |
+| `cost_controls` | object | &mdash; | `force_tier`, `max_tier`, `max_credits`, `prefer_cost`, `prefer_speed`, `fail_fast`, `time_budget` (`prefer_cost`, `prefer_speed`, `fail_fast` also accepted at top level) |
+| `embeddings` | object | &mdash; | `enabled`, `model`, `chunk_size`, `chunk_overlap` (+$0.001/page) |
+| `sync_policy` | `auto` \| `wait_until_deadline` | `auto` | Wait behaviour for long scrapes |
+| `timeout`, `max_response_bytes`, `include_raw_html` | number, number, boolean | `90`, 5 MB, `false` | Limits and raw output |
+| `estimate_first` | boolean | `false` | Run a free cost estimate first |
+
+Not exposed: `source` (dashboard tracking tag), `sync` (the tool is always synchronous), `webhook_url` (use `alterlab_batch`/`alterlab_crawl` webhooks). If a scrape outlives the ~85s synchronous window the tool returns a `job_id`; fetch it with `alterlab_get_job`.
 
 ### `alterlab_extract` &mdash; Extract Structured Data
 
-Extract structured fields from any webpage using pre-built profiles or custom JSON Schema. Returns clean JSON &mdash; ready for databases, spreadsheets, or downstream processing.
+Extract structured fields from HTML, text or markdown content using pre-built profiles or custom JSON Schema. Returns clean JSON &mdash; ready for databases, spreadsheets, or downstream processing.
 
 ```
 "Extract the product name, price, and rating from this Amazon page"
@@ -180,12 +198,17 @@ Extract structured fields from any webpage using pre-built profiles or custom JS
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `url` | string | required | URL to extract from |
-| `extraction_profile` | enum | `auto` | Profile: `product`, `article`, `job_posting`, `faq`, `recipe`, `event` |
+| `content` | string (max 500,000) | required | HTML, text or markdown you already have (this tool does not fetch a URL) |
+| `content_type` | `html` \| `text` \| `markdown` | `html` | Type of `content` |
+| `extraction_profile` / `extraction_template` | enum | &mdash; | Profile: `auto`, `product`, `article`, `job_posting`, `faq`, `recipe`, `event`, `ecommerce_homepage`, `directory_listing` |
 | `extraction_schema` | object | &mdash; | Custom JSON Schema for structured output |
 | `extraction_prompt` | string | &mdash; | Natural language extraction instructions |
-| `render_js` | boolean | `false` | Use headless browser |
-| `use_proxy` | boolean | `false` | Premium proxy |
+| `extraction_provider` / `extraction_model` | enum / string | &mdash; | BYOK LLM selection |
+| `formats` | enum[] | `["json"]` | Output formats |
+| `source_url`, `evidence` | string, boolean | &mdash; | Context URL and provenance |
+| `cache`, `cache_ttl` | `auto` \| `skip` \| `only`, number | `auto` | Extraction result cache |
+
+To scrape and extract in one step, use `alterlab_scrape` with `extraction_schema`.
 
 **Extraction profiles:**
 
@@ -209,6 +232,10 @@ Take a full-page screenshot of any URL. Returns a PNG image directly in the conv
 | `url` | string | required | URL to screenshot |
 | `wait_for` | string | &mdash; | CSS selector to wait for before capture |
 | `wait_until` | enum | `networkidle` | `networkidle`, `domcontentloaded`, or `load` |
+| `timeout` | number | `90` | Timeout in seconds (1-300) |
+| `use_proxy`, `proxy_country` | boolean, string | &mdash; | Premium proxy and geo-targeting |
+| `session_id`, `cookies` | UUID, object | &mdash; | Screenshot pages behind a login |
+| `location` | `{country, language}` | &mdash; | Geo-targeting |
 
 ### `alterlab_estimate_cost` &mdash; Estimate Before You Scrape
 
@@ -222,8 +249,14 @@ Check how much a scrape will cost before running it. Returns the predicted tier,
 |---|---|---|---|
 | `url` | string | required | URL to estimate |
 | `mode` | enum | `auto` | Scraping mode |
-| `render_js` | boolean | `false` | Include JS rendering cost |
-| `use_proxy` | boolean | `false` | Include proxy cost |
+| `method` | `GET` \| `POST` | `GET` | POST costs 1.5x |
+| `render_js` | boolean \| `"auto"` | `false` | Include JS rendering cost |
+| `use_proxy`, `use_own_proxy` | boolean | `false` | Include proxy cost / BYOP discount |
+| `screenshot`, `generate_pdf`, `ocr` | boolean | &mdash; | Include add-on cost |
+
+### `alterlab_get_job` &mdash; Fetch an Async Job
+
+Fetch the status and result of a scrape that returned a `job_id` (a scrape that outlived the synchronous wait window). Parameter: `job_id` (string, required).
 
 ### `alterlab_check_balance` &mdash; Check Your Credits
 
@@ -253,8 +286,12 @@ Create a new stored session with cookies from a logged-in browser. The session i
 |---|---|---|---|
 | `name` | string | required | Human-readable name (e.g., "My Amazon Account") |
 | `domain` | string | required | Domain (e.g., "amazon.com") |
-| `cookies` | `Record<string, string>` | required | Cookie key-value pairs |
-| `user_agent` | string | &mdash; | Browser User-Agent to use with this session |
+| `consent` | boolean | required | Must be `true`: explicit GDPR consent to store the cookies (the API rejects creation otherwise) |
+| `cookies` | `Record<string,string>` \| cookie objects[] | &mdash; | Cookies as key-value pairs or `{name, value, domain, path, ...}` objects |
+| `headers` | `Record<string,string>` | &mdash; | Custom headers (e.g. a User-Agent) |
+| `expires_at`, `notes` | string | &mdash; | Expiry (ISO 8601) and notes |
+| `auto_refresh_enabled`, `notify_before_expiry`, `notify_on_failure` | boolean | `true` | Health checks and notifications |
+| `organization_id`, `shared` | UUID, boolean | &mdash; | Organization sharing |
 
 ### `alterlab_validate_session` &mdash; Validate a Session
 
@@ -355,15 +392,20 @@ No subscriptions. No monthly minimums. Add balance and use it whenever you need 
 |---|---|---|---|
 | Curl | Direct HTTP | $0.0002 | Static pages, RSS feeds, public APIs |
 | HTTP | TLS fingerprinting | $0.0003 | Sites with basic bot detection |
-| Stealth | Browser impersonation | $0.0005 | Cloudflare, DataDome, PerimeterX protected sites |
-| Light JS | JSON extraction | $0.0007 | Server-rendered pages needing structured data |
-| Browser | Headless Chromium | $0.001 | Full JavaScript SPAs (React, Angular, Vue) |
+| Stealth | Browser impersonation | $0.002 | Cloudflare, DataDome, PerimeterX protected sites |
+| Light JS | JSON extraction | $0.0025 | Server-rendered pages needing structured data |
+| Browser | Headless Chromium | $0.004 | Full JavaScript SPAs (React, Angular, Vue) |
 
 ### Optional Add-Ons
 
 | Add-On | Extra Cost | Description |
 |---|---|---|
-| JavaScript Rendering | +$0.0006 | Headless Chromium for dynamic content |
+| JavaScript Rendering | forces Browser tier | No separate add-on: `render_js` bills the Browser tier ($0.004) |
+| PDF Generation | +$0.0004 | PDF of the rendered page |
+| LLM Extraction / Embeddings | +$0.001 | `extraction_schema` / `extraction_prompt`, `embeddings` |
+| POST requests | x1.5 | `method: "POST"` costs 1.5x the tier price |
+| Own proxy (BYOP) | -20% | `use_own_proxy` discount on the tier price |
+| Search | $0.001 / $0.004 | duckduckgo / google and bing engines |
 | Screenshot Capture | +$0.0002 | Full-page PNG screenshot |
 | Premium Proxy | +$0.0002 | Geo-targeted residential proxy (195+ countries) |
 | OCR Text Extraction | +$0.001 | Extract text from images on the page |
@@ -397,7 +439,7 @@ MCP (Model Context Protocol) is Anthropic's open standard for connecting AI assi
 
 ### How is AlterLab different from Firecrawl, ScrapingBee, or Apify MCP servers?
 
-AlterLab starts at $0.0002 per request &mdash; 5-20x cheaper than most scraping APIs &mdash; because it only uses expensive browser rendering when a site actually requires it. Smart tier escalation means you pay for what each site needs, not the maximum. AlterLab also includes built-in structured data extraction with pre-built profiles (product, article, job posting, etc.) at no extra cost.
+AlterLab starts at $0.0002 per request &mdash; 5-20x cheaper than most scraping APIs &mdash; because it only uses expensive browser rendering when a site actually requires it. Smart tier escalation means you pay for what each site needs, not the maximum. AlterLab also includes built-in structured data extraction with pre-built profiles (product, article, job posting, etc.).
 
 ### Can I scrape Amazon, Walmart, and other e-commerce sites from Claude?
 

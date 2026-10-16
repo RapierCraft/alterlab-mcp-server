@@ -4,7 +4,7 @@ import type { AlterLabClient } from "../client.js";
 import { type ApiError, formatErrorResult } from "../errors.js";
 
 export const mapSchema = z.object({
-  url: z.string().url().describe("Starting URL for site discovery"),
+  url: z.string().url().max(2083).describe("Starting URL for site discovery"),
   max_pages: z
     .number()
     .int()
@@ -21,12 +21,14 @@ export const mapSchema = z.object({
     .describe("Link-following depth (0 = start page + sitemap only)"),
   include_patterns: z
     .array(z.string())
+    .max(50)
     .optional()
     .describe(
       "Glob patterns — only include URLs whose path matches at least one (e.g., ['/docs/*'])",
     ),
   exclude_patterns: z
     .array(z.string())
+    .max(50)
     .optional()
     .describe(
       "Glob patterns — exclude URLs whose path matches any (e.g., ['/tag/*', '/page/*'])",
@@ -46,6 +48,7 @@ export const mapSchema = z.object({
     ),
   sitemap_path: z
     .string()
+    .max(500)
     .optional()
     .describe(
       "Explicit path to the sitemap file (e.g., '/sitemap_index.xml'). " +

@@ -6,6 +6,7 @@ import {
   type BetaFeatureListResponse,
   type BetaFeatureMyResponse,
   type BetaFeatureToggleResponse,
+  type AsyncScrapeAccepted,
   type CostEstimate,
   type SessionCreateResponse,
   type SessionDetailResponse,
@@ -20,6 +21,12 @@ import {
  */
 export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
   const parts: string[] = [];
+
+  // A 202 (async job, or sync request downgraded past the ~85s wait window)
+  // carries a job_id but no content or billing — point the caller at the job.
+  if (!response.billing) {
+    return formatAsyncScrapeAccepted(response as unknown as AsyncScrapeAccepted);
+  }
 
   // Title
   if (response.title) {
@@ -94,6 +101,29 @@ export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
     parts.push(`\n**Action Results**\n${actionSummary}`);
   }
 
+  // OCR text extraction (advanced.ocr / mode=ocr)
+  if (response.ocr_results && response.ocr_results.length > 0) {
+    parts.push(
+      "\n**OCR Results**\n```json\n" +
+        JSON.stringify(response.ocr_results, null, 2) +
+        "\n```",
+    );
+  }
+
+  if (response.screenshot_url) {
+    parts.push(`\nScreenshot: ${response.screenshot_url}`);
+  }
+  if (response.pdf_url) {
+    parts.push(`PDF: ${response.pdf_url}`);
+  }
+
+  // Cookie jar captured for a sticky_session — names only, never values.
+  if (response.captured_cookies && Object.keys(response.captured_cookies).length > 0) {
+    parts.push(
+      `Captured cookies (reused via sticky_session): ${Object.keys(response.captured_cookies).join(", ")}`,
+    );
+  }
+
   // Metadata footer
   const tier = response.billing.tier_used;
   const tierName = TIER_NAMES[tier] || tier;
@@ -113,6 +143,7 @@ export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
       `Tier: ${tierName} (${tierPrice}/req) | ` +
       `Cost: ${cost} | ` +
       `Time: ${response.response_time_ms}ms` +
+      (response.job_id ? ` | Job: ${response.job_id}` : "") +
       (response.cached ? " | Cached" : "") +
       (response.billing.byop_applied ? " | BYOP" : ""),
   );
@@ -206,6 +237,30 @@ export function formatScrapeResponse(response: UnifiedScrapeResponse): string {
     );
   }
 
+  return parts.join("\n");
+}
+
+/**
+ * Format the 202 body returned for async scrapes and downgraded sync scrapes.
+ */
+export function formatAsyncScrapeAccepted(response: AsyncScrapeAccepted): string {
+  const parts: string[] = [
+    response.sync_downgraded
+      ? "**Scrape still running** — it outlived the synchronous wait window and continues in the background.\n"
+      : "**Scrape accepted** — running asynchronously.\n",
+    `- Job ID: \`${response.job_id}\``,
+  ];
+  if (response.reason) parts.push(`- Reason: ${response.reason}`);
+  if (response.estimated_completion_s !== undefined && response.estimated_completion_s !== null) {
+    parts.push(`- Estimated completion: ~${response.estimated_completion_s}s`);
+  }
+  if (response.credits_status) parts.push(`- Credits: ${response.credits_status}`);
+  if (response.credits_note) parts.push(`- Note: ${response.credits_note}`);
+  parts.push(
+    `\nFetch the result with \`alterlab_get_job\` (job_id \`${response.job_id}\`). ` +
+      `Poll until status is succeeded, failed or rejected. Re-running the scrape would be billed again.`,
+  );
+  if (response.suggestion) parts.push(`Suggestion: ${response.suggestion}`);
   return parts.join("\n");
 }
 

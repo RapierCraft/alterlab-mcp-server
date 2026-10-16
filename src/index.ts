@@ -105,12 +105,14 @@ import {
   handleSimpleBatch,
 } from "./tools/simple_batch.js";
 
+import { getJobSchema, getJobDescription, handleGetJob } from "./tools/job.js";
+
 function createServer(config: Config): McpServer {
   const client = new AlterLabClient(config);
 
   const server = new McpServer({
     name: "alterlab",
-    version: "1.2.0",
+    version: "1.9.0",
   });
 
   // Register tools
@@ -133,6 +135,13 @@ function createServer(config: Config): McpServer {
     screenshotDescription,
     screenshotSchema.shape,
     (params) => handleScreenshot(client, params as any),
+  );
+
+  server.tool(
+    "alterlab_get_job",
+    getJobDescription,
+    getJobSchema.shape,
+    (params) => handleGetJob(client, params as any),
   );
 
   server.tool(

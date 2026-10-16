@@ -28,6 +28,7 @@ import {
   type SessionRefreshRequest,
   type SessionUpdateRequest,
   type SessionValidateResponse,
+  type JobStatusResponse,
   type UnifiedScrapeRequest,
   type UnifiedScrapeResponse,
   type UsageResponse,
@@ -35,7 +36,7 @@ import {
 
 // Read version from package.json at build time is complex with ESM,
 // so we hardcode it and keep in sync with package.json.
-const VERSION = "1.7.1";
+const VERSION = "1.9.0";
 const MAX_RETRIES = 2;
 
 export class AlterLabClient {
@@ -167,6 +168,13 @@ export class AlterLabClient {
     );
   }
 
+  async getJob(jobId: string): Promise<JobStatusResponse> {
+    return this.request<JobStatusResponse>(
+      "GET",
+      `/api/v1/jobs/${encodeURIComponent(jobId)}`,
+    );
+  }
+
   async estimate(params: UnifiedScrapeRequest): Promise<CostEstimate> {
     return this.request<CostEstimate>(
       "POST",
@@ -180,11 +188,11 @@ export class AlterLabClient {
   }
 
   async getUsage(): Promise<UsageResponse> {
-    return this.request<UsageResponse>("GET", "/api/v1/billing/usage");
+    return this.request<UsageResponse>("GET", "/api/v1/usage");
   }
 
   async listSessions(): Promise<SessionListResponse> {
-    return this.request<SessionListResponse>("GET", "/api/v1/sessions/");
+    return this.request<SessionListResponse>("GET", "/api/v1/sessions");
   }
 
   async createSession(
@@ -192,7 +200,7 @@ export class AlterLabClient {
   ): Promise<SessionCreateResponse> {
     return this.request<SessionCreateResponse>(
       "POST",
-      "/api/v1/sessions/",
+      "/api/v1/sessions",
       params,
     );
   }

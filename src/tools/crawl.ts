@@ -3,12 +3,19 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { AlterLabClient } from "../client.js";
 import { type ApiError, formatErrorResult } from "../errors.js";
 import { formatBalanceWarning } from "../format.js";
+import type { CrawlRequest } from "../types.js";
+import {
+  FORMATS_DESCRIPTION,
+  crawlFormatEnum,
+  extractionProfileEnum,
+  extractionProviderEnum,
+  pickAdvanced,
+  tierEnum,
+} from "./common.js";
 
 // ============================================================================
 // Start Crawl
 // ============================================================================
-
-const crawlTierEnum = z.enum(["1", "2", "3", "3.5", "4"]);
 
 const crawlCostControlsSchema = z
   .object({
@@ -18,25 +25,25 @@ const crawlCostControlsSchema = z
       .positive()
       .optional()
       .describe("Hard spending cap in credits for the entire crawl"),
-    max_tier: crawlTierEnum
+    max_tier: tierEnum
       .optional()
       .describe(
         "Maximum tier to use for page scrapes " +
-          "(1=curl $0.0002, 2=http $0.0003, 3=stealth $0.002, 3.5=lightjs $0.0025, 4=browser $0.004)",
+          "(1=curl $0.0002, 2=http $0.0003, 3=stealth $0.002, 3.5=lightjs $0.0025, 4=browser $0.004). " +
+          "render_js=true with a max_tier below 4 is rejected (render_js forces tier 4).",
       ),
-    force_tier: crawlTierEnum
+    force_tier: tierEnum
       .optional()
       .describe(
         "Force all pages to use this exact tier, bypassing per-page escalation",
       ),
   })
-  .optional()
   .describe(
     "Cost controls for the entire crawl — cap total spend or pin the scraping tier",
   );
 
 export const crawlSchema = z.object({
-  url: z.string().url().describe("Start URL for the crawl"),
+  url: z.string().url().max(2083).describe("Start URL for the crawl"),
   max_pages: z
     .number()
     .int()
@@ -55,12 +62,14 @@ export const crawlSchema = z.object({
     ),
   include_patterns: z
     .array(z.string())
+    .max(50)
     .optional()
     .describe(
       "Glob patterns — only scrape URLs whose path matches at least one (e.g., ['/blog/*', '/docs/*'])",
     ),
   exclude_patterns: z
     .array(z.string())
+    .max(50)
     .optional()
     .describe(
       "Glob patterns — skip URLs whose path matches any (e.g., ['/tag/*', '/author/*'])",
@@ -78,20 +87,54 @@ export const crawlSchema = z.object({
       "Explicit path to the sitemap file (e.g., '/sitemap_index.xml'). " +
         "Use when the sitemap is not at the standard /sitemap.xml location.",
     ),
-  formats: z
-    .array(z.enum(["text", "json", "json_v2", "html", "markdown"]))
+  budget: z
+    .record(z.string(), z.number().int())
     .optional()
-    .describe("Output formats for each scraped page"),
+    .describe(
+      "Per-path page budget: glob pattern -> max pages, most specific pattern wins, '*' is the catch-all " +
+        '(e.g., {"/products/*": 100, "/blog/*": 50, "*": 5}). max_pages stays the hard cap.',
+    ),
+  priority: z
+    .object({
+      keywords: z.array(z.string()).optional().describe("Crawl pages matching these keywords first"),
+      boost_patterns: z.array(z.string()).optional().describe("URL glob patterns to crawl earlier"),
+      demote_patterns: z.array(z.string()).optional().describe("URL glob patterns to crawl later"),
+    })
+    .optional()
+    .describe("Crawl prioritisation hints (keywords, boost_patterns, demote_patterns)"),
+  formats: z
+    .array(crawlFormatEnum)
+    .optional()
+    .describe("Output formats for each scraped page. " + FORMATS_DESCRIPTION),
+  extraction: z
+    .literal("auto")
+    .optional()
+    .describe(
+      "Set to 'auto' for automatic page-type detection and extraction without a user-defined schema. " +
+        "Mutually exclusive with extraction_schema.",
+    ),
   extraction_schema: z
     .record(z.unknown())
     .optional()
     .describe("JSON schema for structured extraction on each page"),
-  extraction_profile: z
-    .enum(["auto", "product", "article", "job_posting", "faq", "recipe", "event"])
+  extraction_profile: extractionProfileEnum
     .optional()
     .describe(
       "Pre-defined extraction profile applied to every crawled page. " +
         "'auto' detects the page type automatically.",
+    ),
+  extraction_template: extractionProfileEnum
+    .optional()
+    .describe("Alias for extraction_profile (mutually exclusive with it)"),
+  extraction_provider: extractionProviderEnum
+    .optional()
+    .describe("BYOK LLM provider used for extraction on each page"),
+  extraction_model: z
+    .string()
+    .nullish()
+    .describe(
+      "Per-request LLM model override in provider-specific format (e.g. 'gpt-4o', 'claude-opus-4-5-20251101', 'llama3-70b-8192'). " +
+        "Overrides the model saved in your BYOK key settings for this request only.",
     ),
   headers: z
     .record(z.string(), z.string())
@@ -100,23 +143,6 @@ export const crawlSchema = z.object({
       "Custom HTTP headers injected into every page request during the crawl " +
         '(e.g., {"Authorization": "Bearer token"}). Maximum 50 headers.',
     ),
-  extraction_model: z
-    .string()
-    .nullish()
-    .describe(
-      "Per-request LLM model override in provider-specific format (e.g. 'gpt-4o', 'claude-opus-4-5-20251101', 'llama3-70b-8192'). " +
-        "Overrides the model saved in your BYOK key settings for this request only.",
-    ),
-  render_js: z
-    .union([z.boolean(), z.literal("auto")])
-    .default(false)
-    .describe(
-      "Render JavaScript on crawled pages. true=always (Tier 4), false=never, auto=smart detection per page",
-    ),
-  use_proxy: z
-    .boolean()
-    .default(false)
-    .describe("Route all crawl requests through premium proxy"),
   max_concurrency: z
     .number()
     .int()
@@ -132,13 +158,33 @@ export const crawlSchema = z.object({
     .boolean()
     .default(false)
     .describe("Include links to subdomains during discovery"),
-  block_images: z
-    .boolean()
-    .default(false)
+  change_tracking: z
+    .object({
+      enabled: z.boolean().optional(),
+      tracking_id: z
+        .string()
+        .max(200)
+        .optional()
+        .describe("Stable ID to compare this crawl against earlier crawls with the same ID"),
+      mode: z.enum(["content", "structured"]).optional(),
+      include_diff: z.boolean().optional().describe("Include a diff of changed pages"),
+    })
+    .optional()
+    .describe("Track page changes between crawls"),
+  render_js: z
+    .union([z.boolean(), z.literal("auto")])
+    .optional()
     .describe(
-      "Block image downloads during browser rendering on each crawled page. " +
-        "Reduces proxy bandwidth and speeds up crawls. Only effective with render_js=true.",
+      "Render JavaScript on crawled pages. true=always (Tier 4, $0.004/page), false=never, auto=smart detection per page",
     ),
+  screenshot: z
+    .boolean()
+    .optional()
+    .describe("Capture a screenshot of each crawled page (requires render_js)"),
+  use_proxy: z
+    .boolean()
+    .optional()
+    .describe("Route all crawl requests through premium proxy (+$0.0002/page)"),
   wait_for: z
     .string()
     .optional()
@@ -148,62 +194,111 @@ export const crawlSchema = z.object({
     ),
   timeout: z
     .number()
+    .int()
     .min(1)
     .max(300)
     .optional()
     .describe("Per-page request timeout in seconds (1-300)"),
+  delay: z
+    .number()
+    .min(0)
+    .max(30)
+    .optional()
+    .describe("Politeness delay between page requests, in seconds (0-30)"),
+  depth_strategy: z
+    .enum(["eager", "sequential"])
+    .optional()
+    .describe("Link-discovery strategy (API default 'sequential')"),
   webhook_url: z
     .string()
     .url()
+    .max(2083)
     .optional()
     .describe("Webhook URL to notify on crawl completion"),
-  cost_controls: crawlCostControlsSchema,
+  webhook: z
+    .object({
+      url: z.string().url().max(2083),
+      events: z.array(z.string()).optional().describe("Event names to deliver (default: all)"),
+      secret: z
+        .string()
+        .min(8)
+        .max(256)
+        .optional()
+        .describe("Signing secret for webhook payloads (8-256 chars)"),
+      headers: z.record(z.string(), z.string()).optional(),
+      metadata: z.record(z.unknown()).optional().describe("Opaque metadata echoed in every event"),
+    })
+    .optional()
+    .describe("Detailed webhook config (events, signing secret, headers); use instead of webhook_url"),
+  storage: z
+    .enum(["redis", "s3", "r2"])
+    .optional()
+    .describe("Where crawl results are stored (API default 'redis')"),
+  cache: z.boolean().optional().describe("Serve pages from the response cache when available"),
+  cache_ttl: z
+    .number()
+    .int()
+    .min(60)
+    .max(86400)
+    .optional()
+    .describe("Cache TTL in seconds (60-86400). Requires cache=true"),
+  force_refresh: z
+    .boolean()
+    .optional()
+    .describe("Bypass the cache and fetch every page fresh"),
+  cost_controls: crawlCostControlsSchema.optional(),
 });
 
 export const crawlDescription =
   "Crawl an entire website for RAG, index all pages on a site, or build a knowledge base from a domain. " +
   "Automatically bypasses anti-bot protection on every page — works on Cloudflare-protected sites. " +
   "Discovers URLs via sitemap parsing and link extraction, then scrapes each page asynchronously. " +
+  "Each page is billed at the tier that succeeds (tier 1 $0.0002 ... tier 4 $0.004). " +
   "Returns content as clean markdown, text, or structured data. " +
   "Returns a crawl_id immediately — use alterlab_crawl_status to poll results. " +
-  "Use include_patterns/exclude_patterns to scope the crawl to specific sections. " +
+  "Use include_patterns/exclude_patterns to scope the crawl to specific sections; budget to allocate pages per path. " +
   "Use render_js='auto' for mixed sites to save 30-60% vs always rendering. " +
-  "Supports extraction_schema or extraction_profile to extract structured data from every page. " +
+  "Supports extraction_schema, extraction_profile or extraction='auto' to extract structured data from every page. " +
   "Use cost_controls to cap total credits or pin the scraping tier for all pages. " +
   "Use sitemap_path to specify a non-standard sitemap location. " +
-  "Use headers to inject custom HTTP headers (e.g., Authorization) into every page request.";
+  "Use headers to inject custom HTTP headers (e.g., Authorization) into every page request. " +
+  "Use change_tracking to detect page changes between runs; webhook/webhook_url for completion events.";
+
+const CRAWL_ADVANCED_KEYS = [
+  "render_js",
+  "screenshot",
+  "use_proxy",
+  "wait_for",
+  "timeout",
+  "delay",
+  "depth_strategy",
+] as const;
+
+/** Translate flat crawl tool parameters into the API's CrawlRequest. Exported for tests. */
+export function buildCrawlRequest(params: z.infer<typeof crawlSchema>): CrawlRequest {
+  const { extraction_model, cost_controls, ...rest } = params;
+  const body: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(rest)) {
+    if (v !== undefined && !(CRAWL_ADVANCED_KEYS as readonly string[]).includes(k)) {
+      body[k] = v;
+    }
+  }
+  if (extraction_model) body.extraction_model = extraction_model;
+  if (cost_controls) body.cost_controls = cost_controls;
+  const advanced = pickAdvanced(
+    params as unknown as Record<string, unknown>,
+    CRAWL_ADVANCED_KEYS,
+  );
+  if (Object.keys(advanced).length > 0) body.advanced = advanced;
+  return body as unknown as CrawlRequest;
+}
 
 export async function handleCrawl(
   client: AlterLabClient,
   params: z.infer<typeof crawlSchema>,
 ): Promise<CallToolResult> {
   try {
-    const response = await client.startCrawl({
-      url: params.url,
-      max_pages: params.max_pages,
-      max_depth: params.max_depth,
-      include_patterns: params.include_patterns,
-      exclude_patterns: params.exclude_patterns,
-      sitemap: params.sitemap,
-      sitemap_path: params.sitemap_path,
-      formats: params.formats,
-      extraction_schema: params.extraction_schema,
-      extraction_profile: params.extraction_profile,
-      headers: params.headers,
-      extraction_model: params.extraction_model ?? undefined,
-      max_concurrency: params.max_concurrency,
-      respect_robots: params.respect_robots,
-      include_subdomains: params.include_subdomains,
-      webhook_url: params.webhook_url,
-      cost_controls: params.cost_controls,
-      advanced: {
-        render_js: params.render_js,
-        use_proxy: params.use_proxy,
-        block_images: params.block_images,
-        wait_for: params.wait_for,
-        timeout: params.timeout,
-      },
-    });
+    const response = await client.startCrawl(buildCrawlRequest(params));
 
     const text =
       `**Crawl Started**\n\n` +

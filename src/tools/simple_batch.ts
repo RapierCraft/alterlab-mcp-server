@@ -1,11 +1,12 @@
 import { z } from "zod";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { AlterLabClient } from "../client.js";
+import { allFormatEnum } from "./common.js";
 import { formatScrapeResponse, formatBalanceWarning } from "../format.js";
 
 export const simpleBatchSchema = z.object({
   urls: z
-    .array(z.string().url())
+    .array(z.string().url().max(2083))
     .min(1)
     .max(20)
     .describe(
@@ -13,7 +14,7 @@ export const simpleBatchSchema = z.object({
     ),
   formats: z
     .array(
-      z.enum(["text", "json", "json_v2", "html", "markdown", "rag", "content"]),
+      allFormatEnum,
     )
     .default(["markdown"])
     .describe(
@@ -24,12 +25,12 @@ export const simpleBatchSchema = z.object({
     .default(false)
     .describe(
       "Render JavaScript using headless browser for all URLs. " +
-        "Required for JS-heavy sites. Increases cost to tier 4 (~$0.001/req).",
+        "Required for JS-heavy sites. Forces tier 4 ($0.004/req).",
     ),
   use_proxy: z
     .boolean()
     .default(false)
-    .describe("Route all requests through premium proxy (+~$0.0002/req)."),
+    .describe("Route all requests through premium proxy (+$0.0002/req)."),
   timeout: z
     .number()
     .int()

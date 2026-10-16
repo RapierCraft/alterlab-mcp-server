@@ -2,6 +2,8 @@ import { z } from "zod";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { AlterLabClient } from "../client.js";
 import { type ApiError, formatErrorResult } from "../errors.js";
+import type { SessionCreateRequest } from "../types.js";
+import { compact } from "./common.js";
 import {
   formatSessionListResponse,
   formatSessionCreateResponse,
@@ -43,6 +45,28 @@ export async function handleListSessions(
 // Create Session
 // ============================================================================
 
+const cookieObjectSchema = z
+  .object({
+    name: z.string().min(1),
+    value: z.string(),
+    domain: z.string().optional(),
+    path: z.string().optional(),
+    secure: z.boolean().optional(),
+    httpOnly: z.boolean().optional(),
+    sameSite: z.string().optional(),
+    expires: z.number().optional(),
+  })
+  .passthrough();
+
+const cookiesSchema = z.union([
+  z.record(z.string(), z.string()),
+  z.array(cookieObjectSchema).max(100),
+]);
+
+const COOKIES_DESCRIPTION =
+  'Cookies as a {name: value} object (e.g. {"session-id": "abc123"}) or as a list (max 100) of cookie ' +
+  "objects with metadata: {name, value, domain?, path?, secure?, httpOnly?, sameSite?, expires?}.";
+
 export const createSessionSchema = z.object({
   name: z
     .string()
@@ -53,37 +77,65 @@ export const createSessionSchema = z.object({
     ),
   domain: z
     .string()
-    .min(1)
+    .min(3)
+    .max(255)
     .describe("Domain this session is for (e.g., 'amazon.com')"),
-  cookies: z
-    .record(z.string(), z.string())
+  consent: z
+    .boolean()
     .describe(
-      "Cookie key-value pairs for authentication " +
-        '(e.g., {"session-id": "abc123", "session-token": "xyz789"})',
+      "Explicit GDPR consent from the account owner to store these session cookies. " +
+        "Must be true — the API rejects session creation with CONSENT_REQUIRED otherwise. " +
+        "Only set true after the user has agreed to AlterLab storing their cookies.",
     ),
-  user_agent: z
+  cookies: cookiesSchema.optional().describe("Cookies for authentication. " + COOKIES_DESCRIPTION),
+  headers: z
+    .record(z.string(), z.string())
+    .optional()
+    .describe(
+      "Custom headers sent with this session (e.g., a User-Agent or Authorization header)",
+    ),
+  expires_at: z
     .string()
     .optional()
-    .describe("Browser User-Agent string to use with this session"),
+    .describe("Session expiry in ISO 8601 format (e.g., '2026-12-31T23:59:59Z')"),
+  notes: z.string().max(1000).optional().describe("Free-text notes about this session"),
+  auto_refresh_enabled: z
+    .boolean()
+    .optional()
+    .describe("Enable proactive expiry detection and health checks (API default true)"),
+  notify_before_expiry: z
+    .boolean()
+    .optional()
+    .describe("Notify when the session is about to expire (API default true)"),
+  notify_on_failure: z
+    .boolean()
+    .optional()
+    .describe("Notify when session validation fails (API default true)"),
+  organization_id: z
+    .string()
+    .uuid()
+    .optional()
+    .describe("Organization to assign the session to (org admins only)"),
+  shared: z
+    .boolean()
+    .optional()
+    .describe("Share the session with organization members immediately (API default false)"),
 });
 
 export const createSessionDescription =
   "Create a new stored session for authenticated scraping. " +
   "Provide cookies from a logged-in browser session to enable scraping " +
   "behind login walls. The session is stored securely and can be reused " +
-  "across multiple scrape requests via session_id.";
+  "across multiple scrape requests via session_id. " +
+  "Requires consent=true (explicit GDPR consent to store the cookies); optional headers, expires_at, notes, " +
+  "auto_refresh/notification flags and organization sharing are supported.";
 
 export async function handleCreateSession(
   client: AlterLabClient,
   params: z.infer<typeof createSessionSchema>,
 ): Promise<CallToolResult> {
   try {
-    const response = await client.createSession({
-      name: params.name,
-      domain: params.domain,
-      cookies: params.cookies,
-      user_agent: params.user_agent,
-    });
+    const response = await client.createSession(compact(params) as SessionCreateRequest);
     return {
       content: [{ type: "text", text: formatSessionCreateResponse(response) }],
     };
@@ -170,12 +222,10 @@ export const updateSessionSchema = z.object({
     .max(100)
     .optional()
     .describe("New name for the session"),
-  cookies: z
-    .record(z.string(), z.string())
+  cookies: cookiesSchema
     .optional()
     .describe(
-      "New cookie key-value pairs — replaces ALL existing cookies " +
-        '(e.g., {"session-id": "new123", "session-token": "newxyz"})',
+      "New cookies — replaces ALL existing cookies. " + COOKIES_DESCRIPTION,
     ),
   headers: z
     .record(z.string(), z.string())
@@ -192,6 +242,18 @@ export const updateSessionSchema = z.object({
     .max(1000)
     .optional()
     .describe("Notes or description for this session"),
+  auto_refresh_enabled: z
+    .boolean()
+    .optional()
+    .describe("Enable or disable proactive expiry detection and health checks"),
+  notify_before_expiry: z
+    .boolean()
+    .optional()
+    .describe("Enable or disable the before-expiry notification"),
+  notify_on_failure: z
+    .boolean()
+    .optional()
+    .describe("Enable or disable the validation-failure notification"),
 });
 
 export const updateSessionDescription =
@@ -224,12 +286,11 @@ export async function handleUpdateSession(
 
 export const refreshSessionSchema = z.object({
   session_id: z.string().uuid().describe("UUID of the session to refresh"),
-  cookies: z
-    .record(z.string(), z.string())
+  cookies: cookiesSchema
     .optional()
     .describe(
-      "New cookie key-value pairs to replace the old ones. " +
-        "If omitted, only failure counters are reset.",
+      "New cookies to replace the old ones. If omitted, only failure counters are reset. " +
+        COOKIES_DESCRIPTION,
     ),
   headers: z
     .record(z.string(), z.string())

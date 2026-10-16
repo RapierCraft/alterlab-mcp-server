@@ -8,6 +8,7 @@ export const extractSchema = z.object({
   content: z
     .string()
     .min(1)
+    .max(500_000)
     .describe(
       "Raw content to extract from — HTML, text, or markdown. " +
         "Bring your own pre-fetched content; this endpoint does NOT scrape a URL.",
@@ -68,6 +69,7 @@ export const extractSchema = z.object({
     ),
   extraction_model: z
     .string()
+    .max(256)
     .nullish()
     .describe(
       "Per-request LLM model override in provider-specific format (e.g. 'gpt-4o', 'claude-opus-4-5-20251101', 'llama3-70b-8192'). " +
