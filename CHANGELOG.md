@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.10.0
+
+Remote mode with OAuth (#463). Local API-key behaviour is unchanged.
+
+### Added
+- Remote mode: `--remote [url]` or `ALTERLAB_MCP_URL` bridges stdio MCP to the hosted Streamable HTTP endpoint
+  (`https://mcp.alterlab.io/mcp` by default) instead of calling the REST API. JSON and SSE responses are relayed,
+  the `Mcp-Session-Id` and `MCP-Protocol-Version` headers are managed, and a session the server drops (404) is
+  re-initialized transparently. `tools/list` is answered by the hosted server, so no tool schemas are declared in this mode.
+- OAuth sign-in when no API key is present: RFC 9728 discovery from the 401 `resource_metadata`, RFC 8414
+  authorization server metadata, RFC 7591 registration as a native public client, PKCE S256 authorization through the
+  system browser with a loopback listener on `127.0.0.1` (random port), RFC 8707 resource binding, automatic
+  refresh (before expiry and on a server 401, safe against concurrent clients), and RFC 7009 revocation.
+- `--login` and `--logout` (with `--remote`) to sign in ahead of time or revoke the grant and delete local tokens.
+- Token storage in `~/.alterlab/oauth.json` (`ALTERLAB_CONFIG_DIR` overrides the directory): directory `0700`,
+  file `0600`, atomic replace. Tokens, codes and PKCE verifiers are never logged.
+- `ALTERLAB_API_KEY` (or the saved key) with `--remote` sends the key as the bearer token, skipping OAuth.
+- `src/shared/tool-definitions.json`: copy of the platform's shared tool source (synced by AlterLab's
+  ecosystem-sync workflow) and a drift test that fails if the shared source gains a tool or parameter this package lacks.
+
+### Notes
+- Local mode keeps its own tool schemas. The shared source currently covers 9 tools and a subset of each tool's
+  parameters, while this package exposes 26 tools and the full request schemas guarded by the schema-parity test (#616).
+  Generating the local tools from the shared source would remove tools and parameters, so it is deferred until the shared
+  source reaches parity (follow-up: grow `shared/mcp_tools/tool_definitions.json`, then generate the local schemas from it).
+- `alterlab_crawl.block_images` is in the shared source but is rejected by the API for crawls (removed locally in 1.9.0);
+  the drift test lists it as a known divergence.
+
 ## 1.9.0
 
 Consolidated tool schemas to parity with the current AlterLab API (#615). Supersedes the stale
