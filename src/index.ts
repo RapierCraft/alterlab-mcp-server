@@ -2,9 +2,15 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { AlterLabClient } from "./client.js";
+import { AlterLabClient, VERSION } from "./client.js";
 import { type Config } from "./config.js";
 import { ensureAuth } from "./auth.js";
+import {
+  apiKeyFromEnvironment,
+  resolveRemoteSettings,
+  runRemote,
+  runRemoteAuthCommand,
+} from "./remote/index.js";
 import { CONFIG_FILE_PATH } from "./config.js";
 import * as fs from "fs";
 import {
@@ -112,7 +118,7 @@ function createServer(config: Config): McpServer {
 
   const server = new McpServer({
     name: "alterlab",
-    version: "1.9.0",
+    version: "1.10.0",
   });
 
   // Register tools
@@ -310,6 +316,22 @@ export function createSandboxServer(): McpServer {
 
 async function main() {
   const args = process.argv.slice(2);
+
+  // Remote mode (--remote / ALTERLAB_MCP_URL): bridge stdio to the hosted
+  // endpoint. Without either, behavior is exactly the local API-key server.
+  const remote = resolveRemoteSettings(args);
+  if (remote) {
+    if (args.includes("--logout") || args.includes("--login")) {
+      await runRemoteAuthCommand(
+        args.includes("--logout") ? "logout" : "login",
+        remote,
+        VERSION,
+      );
+      process.exit(0);
+    }
+    await runRemote(remote, VERSION, apiKeyFromEnvironment());
+    return;
+  }
   // --setup: explicit re-authentication flag
   // --auth oauth: OAuth-style alias (device flow IS the auth; "oauth" is treated as a sub-arg)
   const isSetupMode =
