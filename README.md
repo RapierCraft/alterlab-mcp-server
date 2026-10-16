@@ -146,6 +146,76 @@ npx -y @smithery/cli install alterlab-mcp-server --client claude
 
 ---
 
+## Local mode and remote mode
+
+The package runs in one of two modes. Pick one per MCP client entry.
+
+| | Local mode (default) | Remote mode |
+|---|---|---|
+| Turn it on | Nothing: this is how it has always worked | `--remote` or `ALTERLAB_MCP_URL` |
+| Sign-in | `ALTERLAB_API_KEY` (or the key saved by `--setup`) | OAuth in your browser, no key to paste; an API key also works |
+| Where tools run | This process calls the AlterLab REST API | The hosted MCP endpoint (`https://mcp.alterlab.io/mcp`) runs them; this process only relays |
+| Tools exposed | All tools in this package | The tools the hosted server publishes (it answers `tools/list`) |
+| Network needed | `api.alterlab.io` | `mcp.alterlab.io` and `api.alterlab.io` |
+
+**Use local mode** when you already have an API key, run in CI or other headless environments, or need a tool
+that is not on the hosted server yet (for example sessions, beta features, `alterlab_check_balance`).
+Existing `ALTERLAB_API_KEY` configurations keep working with no change.
+
+**Use remote mode** when you want to sign in with your AlterLab account instead of handling a key, want a
+spend cap and scopes you approve at sign-in (and can revoke from the dashboard), or want your client to get
+new hosted tools without updating this package. If your client supports remote MCP servers natively
+(a URL in its config), connect it to `https://mcp.alterlab.io/mcp` directly. This bridge is for clients that
+only speak stdio.
+
+### Remote mode with OAuth
+
+```json
+{
+  "mcpServers": {
+    "alterlab": {
+      "command": "npx",
+      "args": ["-y", "alterlab-mcp-server", "--remote"]
+    }
+  }
+}
+```
+
+On first use the server opens your browser to sign in and approve access, then stores tokens so later runs
+need no interaction. If the browser cannot open, it prints the authorization URL to stderr. Sign-in requires a
+browser on the same machine (the redirect returns to `127.0.0.1`); on a remote or headless host use an API key.
+
+How it signs in: a request without credentials is answered `401` with a `resource_metadata` pointer
+([RFC 9728](https://www.rfc-editor.org/rfc/rfc9728)); the server reads the authorization server metadata
+([RFC 8414](https://www.rfc-editor.org/rfc/rfc8414)), registers itself as a native public client
+([RFC 7591](https://www.rfc-editor.org/rfc/rfc7591)) with a loopback redirect on `127.0.0.1` and a random
+port, and runs the authorization-code flow with PKCE S256, binding the token to the hosted endpoint
+([RFC 8707](https://www.rfc-editor.org/rfc/rfc8707)). The access token is refreshed automatically before it
+expires or when the server rejects it; refresh tokens rotate on every use.
+
+Requested scope is `scrape` (all hosted tools need only this). Set `ALTERLAB_OAUTH_SCOPE` to change it.
+
+| Command | Effect |
+|---|---|
+| `npx alterlab-mcp-server --remote --login` | Sign in now (useful before adding the server to a client) |
+| `npx alterlab-mcp-server --remote --logout` | Revoke the grant at AlterLab and delete the stored tokens |
+
+Tokens are stored in `~/.alterlab/oauth.json` (override the directory with `ALTERLAB_CONFIG_DIR`). The
+directory is created `0700` and the file `0600` on macOS and Linux; on Windows the file relies on your user
+profile's permissions. Tokens are never written to logs. You can also revoke access from your AlterLab dashboard.
+
+### Remote mode with an API key
+
+Set `ALTERLAB_API_KEY` (or run `--setup`) next to `--remote`; the key is sent as the bearer token and no
+browser sign-in happens.
+
+### Pointing at another server
+
+`--remote https://host/mcp` or `ALTERLAB_MCP_URL=https://host/mcp` selects a different endpoint (for example a
+staging deployment). Plain `http://` is accepted only for loopback addresses.
+
+---
+
 ## Tools
 
 ### `alterlab_scrape` &mdash; Scrape Any Webpage
@@ -418,8 +488,11 @@ No subscriptions. No monthly minimums. Add balance and use it whenever you need 
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `ALTERLAB_API_KEY` | Yes | &mdash; | Your API key ([get one free](https://app.alterlab.io/signin?redirect=/dashboard/keys&source=mcp&utm_source=mcp&utm_medium=integration&utm_campaign=mcp_server)) |
+| `ALTERLAB_API_KEY` | Local mode: yes. Remote mode: no (OAuth sign-in instead) | &mdash; | Your API key ([get one free](https://app.alterlab.io/signin?redirect=/dashboard/keys&source=mcp&utm_source=mcp&utm_medium=integration&utm_campaign=mcp_server)) |
 | `ALTERLAB_API_URL` | No | `https://api.alterlab.io` | API base URL (for self-hosted or development) |
+| `ALTERLAB_MCP_URL` | No | &mdash; | Enables [remote mode](#local-mode-and-remote-mode) against this Streamable HTTP endpoint (same as `--remote <url>`) |
+| `ALTERLAB_OAUTH_SCOPE` | No | `scrape` | Remote mode: OAuth scope to request at sign-in |
+| `ALTERLAB_CONFIG_DIR` | No | `~/.alterlab` | Remote mode: directory for the stored OAuth tokens |
 
 ---
 
