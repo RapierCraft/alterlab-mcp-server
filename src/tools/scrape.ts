@@ -280,6 +280,56 @@ export const scrapeSchema = z.object({
         "The estimated tier, cost, and confidence are prepended to the scrape result. " +
         "Useful for unfamiliar or potentially expensive sites — see cost before committing.",
     ),
+
+  // ── Auto-generated from OpenAPI spec ──
+  actions:
+    z.union([z.array(z.unknown()), z.unknown()]).optional().describe("Browser automation actions to execute after page load (max 20). Requires render_js=true. Actions execute sequentially; failed actions are skipped (don't abort the sequence). Results returned in action_results."),
+  block_images:
+    z.union([z.boolean(), z.unknown()]).optional().describe("Skip image downloads during browser rendering to reduce proxy bandwidth. When true, the browser aborts image requests — <img> src URLs remain in the DOM so HTML and text extraction are unaffected, but image bytes are not downloaded. When false, all images are downloaded (higher bandwidth, needed for visual accuracy). When null (default), the per-domain playbook setting is used. Most domains default to blocking images (true) to save bandwidth. E-commerce domains like amazon.com default to false because their anti-bot systems monitor resource loading patterns — browsers that never request images are more likely to be flagged as bots. Note: screenshot and generate_pdf always override this to false regardless of the value passed — images are required for accurate visual output."),
+  cookies:
+    z.union([z.record(z.unknown()), z.unknown()]).optional().describe("Inline cookies for one-off authenticated scraping (not stored). Mutually exclusive with session_id."),
+  flatten_shadow_dom:
+    z.boolean().default(false).describe("Flatten Shadow DOM roots into regular DOM for extraction (free, requires render_js). Web Components with shadow roots become visible in the serialized HTML."),
+  generate_pdf:
+    z.boolean().default(false).describe("Generate PDF of rendered page (+$0.0004, requires render_js)"),
+  include_iframes:
+    z.boolean().default(false).describe("Inline iframe content into the main document (free, requires render_js). Same-origin iframes are read directly; cross-origin iframes are marked but not fetched."),
+  markdown:
+    z.boolean().default(false).describe("Extract content as Markdown (free)"),
+  ocr:
+    z.boolean().default(false).describe("Extract text from images using OCR (+$0.001)"),
+  proxy_country:
+    z.union([z.string(), z.unknown()]).optional().describe("Preferred proxy country code (e.g., 'US', 'DE') for geo-targeting"),
+  proxy_integration_id:
+    z.union([z.string(), z.unknown()]).optional().describe("Specific proxy integration ID to use (requires use_own_proxy=true)"),
+  remove_cookie_banners:
+    z.boolean().default(true).describe("Remove cookie consent banners from HTML before content extraction (free, enabled by default)"),
+  render_js:
+    z.union([z.boolean(), z.string()]).default(false).describe("Render JavaScript using headless browser (forces Tier 4 minimum). Set to \"auto\" for smart detection: probes each page and only renders JS-heavy pages with browser, using fast HTTP for static pages. Saves 30-60% on mixed sites. When a render_js=true request fails on a verification challenge or a timeout, the error includes a `hint` (see ForcedRenderHint) recommending render_js=\"auto\"."),
+  scroll_count:
+    z.number().default(3).describe("Number of scroll iterations when scroll_to_load is enabled (1-10, default 3)."),
+  scroll_to_load:
+    z.boolean().default(false).describe("Scroll page to trigger lazy-loaded content (requires render_js). Performs explicit viewport-height scrolls to load dynamic content. Adds ~2-3s latency."),
+  section_filter:
+    z.union([z.unknown()]).optional().describe("Filter options for json_v2 section tree output. Only applies when 'json_v2' is in the formats list. Controls which sections and content blocks are included in the response."),
+  session_headers:
+    z.union([z.record(z.unknown()), z.unknown()]).optional().describe("Inline auth headers (e.g. Authorization: Bearer). Merged with session headers if session_id is also resolving headers."),
+  session_id:
+    z.union([z.string(), z.unknown()]).optional().describe("Reference to a stored SessionIntegration. Injects stored cookies/headers for authenticated scraping."),
+  skip_tls_verification:
+    z.union([z.boolean(), z.unknown()]).optional().describe("TLS certificate verification for the target. Omit it (recommended): certificates are verified, and if the site's own certificate is invalid (expired, self-signed, wrong hostname, incomplete chain) the page is still fetched without verification. Set true to skip verification from the start. Set false to always require a valid certificate; sites with an invalid certificate then fail."),
+  sticky_session:
+    z.union([z.string(), z.unknown()]).optional().describe("Customer-facing sticky-session handle. Two separate /scrape calls that pass the same sticky_session value reuse the cookies captured on the first call (see captured_cookies in the response) for the handle's TTL, and target the SAME exit IP on a best-effort basis. Note the exit IP is only guaranteed to hold for the upstream residential-session window (~10 minutes) — for longer TTLs the shared cookie jar persists but the exit IP may rotate. Enables stateful multi-request flows — e.g. request 1 loads a page, request 2 fetches the captcha/image that appeared using request 1's cookie jar (and, within ~10 min, the same IP). Requires a paid plan (growth tier or above). Alphanumeric, '-' and '_' only, max 128 chars."),
+  sticky_session_ttl:
+    z.union([z.number(), z.unknown()]).optional().describe("Sticky-session lifetime in seconds (300–7200, default 1800). This governs how long the captured cookie jar bound to sticky_session is retained; after it the handle resolves to a fresh jar. The exit-IP pin is separate and shorter — it holds only for the upstream residential-session window (~10 minutes), so a TTL above that keeps the cookie jar alive while the exit IP may rotate. Ignored unless sticky_session is set."),
+  use_own_proxy:
+    z.boolean().default(false).describe("Use your own integrated proxy instead of system proxy ($0.0008/request)"),
+  use_proxy:
+    z.boolean().optional().describe("Route request through premium proxy (+$0.0002). Omit this field to allow platform-driven reactive proxy routing; explicit false keeps direct routing."),
+  use_system_proxy:
+    z.boolean().default(false).describe("Override your default proxy integration and use AlterLab's system proxy instead"),
+  wait_condition:
+    z.string().default("networkidle").describe("Wait condition for JS rendering (domcontentloaded|networkidle|load)"),
 });
 
 export const scrapeDescription =
