@@ -1,0 +1,877 @@
+{
+  "version": 1,
+  "tools": [
+    {
+      "name": "alterlab_scrape",
+      "summary": "Fetch any URL and return clean markdown, text, HTML, or JSON, with automatic website compatibility through 5-tier escalation",
+      "description": "Fetch any URL and return clean markdown, text, HTML, or JSON. Website challenges and JavaScript-heavy pages are handled automatically by a 5-tier system that starts at the cheapest tier that works and escalates only when needed. Returns markdown by default, ready for LLM context. Supports GET and POST via method, structured extraction via extraction_schema or extraction_prompt, and cost caps via cost_controls.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to scrape"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "GET",
+              "POST"
+            ],
+            "default": "GET",
+            "description": "HTTP method. POST is for GraphQL, forms and REST APIs."
+          },
+          "body": {
+            "type": "string",
+            "description": "Request body for POST requests."
+          },
+          "content_type": {
+            "type": "string",
+            "enum": [
+              "application/json",
+              "application/x-www-form-urlencoded",
+              "text/plain",
+              "application/graphql"
+            ],
+            "description": "Content-Type of body. Requires body."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "html",
+              "js",
+              "pdf",
+              "ocr"
+            ],
+            "default": "auto",
+            "description": "Scraping mode: auto (recommended), html, js (headless browser), pdf, or ocr"
+          },
+          "formats": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "text",
+                "json",
+                "json_v2",
+                "html",
+                "markdown",
+                "rag",
+                "raw",
+                "content"
+              ]
+            },
+            "default": [
+              "markdown"
+            ],
+            "description": "Output formats. 'markdown' is best for LLM consumption."
+          },
+          "extraction_schema": {
+            "type": "object",
+            "description": "JSON schema for structured extraction. Fields matching this schema are extracted from the page. Example: { \"title\": \"string\", \"price\": \"number\" }"
+          },
+          "extraction_prompt": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "Natural language extraction instruction."
+          },
+          "extraction_profile": {
+            "type": "string",
+            "description": "Built-in extraction profile (product, article, job_posting, ...)."
+          },
+          "extraction_model": {
+            "type": "string",
+            "description": "LLM model override."
+          },
+          "extraction_provider": {
+            "type": "string",
+            "enum": [
+              "openai",
+              "anthropic",
+              "openrouter",
+              "groq"
+            ]
+          },
+          "template": {
+            "type": "string",
+            "description": "Extraction template name."
+          },
+          "evidence": {
+            "type": "boolean",
+            "description": "Return extraction evidence."
+          },
+          "filter_content": {
+            "type": "boolean"
+          },
+          "cache": {
+            "type": "boolean",
+            "description": "Allow a cached result."
+          },
+          "cache_ttl": {
+            "type": "number",
+            "minimum": 60,
+            "maximum": 86400
+          },
+          "render_js": {
+            "description": "Render JavaScript with a headless browser. 'auto' renders only when needed.",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "auto"
+                ]
+              }
+            ],
+            "default": false
+          },
+          "use_proxy": {
+            "type": "boolean",
+            "default": false,
+            "description": "Route through a premium proxy."
+          },
+          "proxy_country": {
+            "type": "string",
+            "description": "Proxy country code."
+          },
+          "wait_for": {
+            "type": "string",
+            "description": "CSS selector to wait for."
+          },
+          "timeout": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 300,
+            "default": 90
+          },
+          "max_response_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 52428800
+          },
+          "include_raw_html": {
+            "type": "boolean",
+            "default": false
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Stored session (cookies) to scrape with."
+          },
+          "cookies": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "scroll_to_load": {
+            "type": "boolean",
+            "default": false
+          },
+          "scroll_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "remove_cookie_banners": {
+            "type": "boolean",
+            "default": true
+          },
+          "block_images": {
+            "type": "boolean",
+            "default": false
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "country": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 2
+              },
+              "language": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 5
+              }
+            }
+          },
+          "prefer_cost": {
+            "type": "boolean"
+          },
+          "prefer_speed": {
+            "type": "boolean"
+          },
+          "fail_fast": {
+            "type": "boolean"
+          },
+          "force_refresh": {
+            "type": "boolean"
+          },
+          "promote_schema_org": {
+            "type": "boolean"
+          },
+          "cost_controls": {
+            "type": "object",
+            "description": "Cap spending, pin a tier, or trade off cost vs speed.",
+            "properties": {
+              "force_tier": {
+                "type": "string",
+                "enum": [
+                  "1",
+                  "2",
+                  "3",
+                  "3.5",
+                  "4"
+                ]
+              },
+              "max_tier": {
+                "type": "string",
+                "enum": [
+                  "1",
+                  "2",
+                  "3",
+                  "3.5",
+                  "4"
+                ]
+              },
+              "max_credits": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "prefer_cost": {
+                "type": "boolean"
+              },
+              "prefer_speed": {
+                "type": "boolean"
+              },
+              "fail_fast": {
+                "type": "boolean"
+              },
+              "time_budget": {
+                "type": "number",
+                "minimum": 5,
+                "maximum": 300
+              }
+            }
+          },
+          "estimate_first": {
+            "type": "boolean",
+            "default": false,
+            "description": "Run a free cost estimate before scraping."
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_extract",
+      "summary": "Extract structured data (prices, product info, custom fields) from HTML, text, or markdown you already have",
+      "description": "Extract structured data (prices, product info, custom fields) from HTML, text, or markdown you already have. Does not fetch a URL; use alterlab_scrape with extraction_schema to scrape and extract in one step.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content_type": {
+            "type": "string",
+            "enum": [
+              "html",
+              "text",
+              "markdown"
+            ],
+            "default": "html"
+          },
+          "extraction_profile": {
+            "type": "string"
+          },
+          "extraction_template": {
+            "type": "string"
+          },
+          "extraction_schema": {
+            "type": "object",
+            "description": "JSON schema for structured extraction. Fields matching this schema are extracted from the page. Example: { \"title\": \"string\", \"price\": \"number\" }"
+          },
+          "extraction_prompt": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "extraction_model": {
+            "type": "string"
+          },
+          "extraction_provider": {
+            "type": "string",
+            "enum": [
+              "openai",
+              "anthropic",
+              "openrouter",
+              "groq"
+            ]
+          },
+          "formats": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "json"
+            ]
+          },
+          "source_url": {
+            "type": "string",
+            "maxLength": 2048
+          },
+          "evidence": {
+            "type": "boolean",
+            "default": false
+          },
+          "cache": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "skip",
+              "only"
+            ],
+            "default": "auto"
+          },
+          "cache_ttl": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 86400
+          }
+        },
+        "required": [
+          "content"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_screenshot",
+      "summary": "Capture a full-page PNG screenshot of any URL, including anti-bot-protected sites",
+      "description": "Capture a full-page PNG screenshot of any URL, including anti-bot-protected sites, rendered in a real headless browser. Use wait_for to wait for an element and wait_until to control load timing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "wait_for": {
+            "type": "string",
+            "description": "CSS selector to wait for."
+          },
+          "wait_until": {
+            "type": "string",
+            "enum": [
+              "networkidle",
+              "domcontentloaded",
+              "load"
+            ],
+            "default": "networkidle"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_crawl",
+      "summary": "Crawl an entire website for RAG or indexing — discovers and scrapes every page on a domain",
+      "description": "Crawl an entire website for RAG or indexing. Discovers URLs via sitemap and link extraction, then scrapes every page with anti-bot handling. Returns a crawl_id immediately; results are available from GET /api/v1/crawl/{crawl_id}.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "max_pages": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000,
+            "default": 50
+          },
+          "max_depth": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20,
+            "default": 3
+          },
+          "include_patterns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "exclude_patterns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sitemap": {
+            "type": "string",
+            "enum": [
+              "include",
+              "skip",
+              "only"
+            ],
+            "default": "include"
+          },
+          "sitemap_path": {
+            "type": "string"
+          },
+          "formats": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "text",
+                "json",
+                "json_v2",
+                "html",
+                "markdown"
+              ]
+            }
+          },
+          "extraction_schema": {
+            "type": "object",
+            "description": "JSON schema for structured extraction. Fields matching this schema are extracted from the page. Example: { \"title\": \"string\", \"price\": \"number\" }"
+          },
+          "extraction_profile": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "product",
+              "article",
+              "job_posting",
+              "faq",
+              "recipe",
+              "event"
+            ]
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "extraction_model": {
+            "type": "string"
+          },
+          "render_js": {
+            "description": "Render JavaScript with a headless browser. 'auto' renders only when needed.",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "auto"
+                ]
+              }
+            ],
+            "default": false
+          },
+          "use_proxy": {
+            "type": "boolean",
+            "default": false,
+            "description": "Route through a premium proxy."
+          },
+          "max_concurrency": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 10
+          },
+          "respect_robots": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_subdomains": {
+            "type": "boolean",
+            "default": false
+          },
+          "wait_for": {
+            "type": "string"
+          },
+          "timeout": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 300
+          },
+          "webhook_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "cost_controls": {
+            "type": "object",
+            "properties": {
+              "max_credits": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "max_tier": {
+                "type": "string",
+                "enum": [
+                  "1",
+                  "2",
+                  "3",
+                  "3.5",
+                  "4"
+                ]
+              },
+              "force_tier": {
+                "type": "string",
+                "enum": [
+                  "1",
+                  "2",
+                  "3",
+                  "3.5",
+                  "4"
+                ]
+              }
+            }
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_search",
+      "summary": "Search the web and get structured SERP results, optionally scraping each result page",
+      "description": "Search the web and get structured SERP results (URLs, titles, snippets). Set scrape_results=true to also scrape each result page. Use domain to restrict to one site and time_range to filter by recency.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "num_results": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30,
+            "default": 10
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "default": 1
+          },
+          "domain": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 2
+          },
+          "language": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 5
+          },
+          "time_range": {
+            "type": "string",
+            "enum": [
+              "hour",
+              "day",
+              "week",
+              "month",
+              "year"
+            ]
+          },
+          "scrape_results": {
+            "type": "boolean",
+            "default": false
+          },
+          "formats": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "text",
+                "json",
+                "json_v2",
+                "html",
+                "markdown"
+              ]
+            }
+          },
+          "extraction_schema": {
+            "type": "object",
+            "description": "JSON schema for structured extraction. Fields matching this schema are extracted from the page. Example: { \"title\": \"string\", \"price\": \"number\" }"
+          },
+          "safe_search": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_map",
+      "summary": "Discover every URL on a site via sitemap parsing and link extraction — no content scraping",
+      "description": "Discover every URL on a site via sitemap parsing and link extraction, without scraping content. Use it before alterlab_crawl or alterlab_batch to choose pages.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "max_pages": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50000,
+            "default": 500
+          },
+          "max_depth": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10,
+            "default": 3
+          },
+          "include_patterns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "exclude_patterns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "search": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "sitemap": {
+            "type": "string",
+            "enum": [
+              "include",
+              "skip",
+              "only"
+            ],
+            "default": "include"
+          },
+          "sitemap_path": {
+            "type": "string"
+          },
+          "include_metadata": {
+            "type": "boolean",
+            "default": false
+          },
+          "include_subdomains": {
+            "type": "boolean",
+            "default": false
+          },
+          "respect_robots": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_batch_scrape",
+      "summary": "Scrape 2-20 URLs in parallel and get all results back in one call, no polling required",
+      "description": "Scrape 2-20 URLs in parallel and get all results back in one call, no polling required. Failed URLs report their error; successful ones return content. For 20+ URLs use alterlab_batch.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "urls": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "minItems": 1,
+            "maxItems": 20
+          },
+          "formats": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "text",
+                "json",
+                "json_v2",
+                "html",
+                "markdown",
+                "rag",
+                "content"
+              ]
+            },
+            "default": [
+              "markdown"
+            ]
+          },
+          "render_js": {
+            "type": "boolean",
+            "default": false
+          },
+          "use_proxy": {
+            "type": "boolean",
+            "default": false,
+            "description": "Route through a premium proxy."
+          },
+          "timeout": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 300,
+            "default": 90
+          },
+          "max_concurrent": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "default": 3
+          }
+        },
+        "required": [
+          "urls"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_batch",
+      "summary": "Scrape large URL sets (20+) asynchronously with batch-ID polling",
+      "description": "Scrape large URL sets (up to 100 per call) asynchronously. Each URL can have its own mode, formats and extraction_schema. Returns a batch_id immediately; results are available from GET /api/v1/batch/{batch_id}.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "urls": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "auto",
+                    "html",
+                    "js",
+                    "pdf",
+                    "ocr"
+                  ],
+                  "default": "auto",
+                  "description": "Scraping mode: auto (recommended), html, js (headless browser), pdf, or ocr"
+                },
+                "formats": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "extraction_schema": {
+                  "type": "object",
+                  "description": "JSON schema for structured extraction. Fields matching this schema are extracted from the page. Example: { \"title\": \"string\", \"price\": \"number\" }"
+                },
+                "render_js": {
+                  "type": "boolean"
+                },
+                "use_proxy": {
+                  "type": "boolean"
+                },
+                "timeout": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 300
+                },
+                "wait_for": {
+                  "type": "string"
+                },
+                "cache": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              "required": [
+                "url"
+              ]
+            }
+          },
+          "webhook_url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "urls"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_estimate_cost",
+      "summary": "Estimate the credit cost of a scrape before running it",
+      "description": "Estimate the credit cost of a scrape before running it. No credits are charged. Returns the predicted tier, estimated cost and confidence.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "html",
+              "js",
+              "pdf",
+              "ocr"
+            ],
+            "default": "auto",
+            "description": "Scraping mode: auto (recommended), html, js (headless browser), pdf, or ocr"
+          },
+          "formats": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "render_js": {
+            "type": "boolean",
+            "default": false
+          },
+          "use_proxy": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
+    }
+  ]
+}
