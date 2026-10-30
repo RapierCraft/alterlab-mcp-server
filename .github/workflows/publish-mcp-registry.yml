@@ -11,6 +11,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Wait for the npm version (registry validates it exists)
+        run: |
+          v=$(node -p "require('./server.json').packages[0].version")
+          for i in $(seq 1 60); do
+            [ "$(npm view "alterlab-mcp-server@$v" version 2>/dev/null)" = "$v" ] && exit 0
+            sleep 10
+          done
+          echo "::error::alterlab-mcp-server@$v not on npm after 10 minutes"
+          exit 1
+
       - name: Install mcp-publisher
         run: |
           curl -sL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz
