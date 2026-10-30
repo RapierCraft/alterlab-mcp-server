@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.10.0
+
+### Added
+- `server.json` now advertises the hosted Streamable HTTP endpoint (`https://mcp.alterlab.io/mcp`, OAuth) in `remotes`, so the Official MCP Registry entry lists it alongside the npm stdio package.
+- Releases are cut automatically when the version changes on `main` (`release.yml`).
+
 ## 1.9.0
 
 Consolidated tool schemas to parity with the current AlterLab API (#615). Supersedes the stale
