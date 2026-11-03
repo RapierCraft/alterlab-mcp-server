@@ -4,7 +4,7 @@
     {
       "name": "alterlab_scrape",
       "summary": "Fetch any URL and return clean markdown, text, HTML, or JSON, with automatic website compatibility through 5-tier escalation",
-      "description": "Use when a normal fetch returns 403/429, a bot-protection challenge page, a CAPTCHA, or an empty JavaScript shell. Fetch any URL and return clean markdown, text, HTML, or JSON. Website challenges and JavaScript-heavy pages are handled automatically by a 5-tier system that starts at the cheapest tier that works and escalates only when needed. Returns markdown by default, ready for LLM context. Supports GET and POST via method, structured extraction via extraction_schema or extraction_prompt, and cost caps via cost_controls. Supports browser actions via actions, plus screenshot and generate_pdf; the response includes action_results, one entry per action with index, type, success, error, result (evaluate) and screenshot_url (screenshot actions).",
+      "description": "Fetch one URL and return its content as clean markdown, text, HTML, or JSON. Use when a normal fetch returns 403/429, a bot-protection challenge page, a CAPTCHA, or an empty JavaScript shell. Website challenges and JavaScript-heavy pages are handled automatically by a 5-tier system that starts at the cheapest tier that works and escalates only when needed. Returns markdown by default, ready for LLM context. Supports GET and POST via method, structured extraction via extraction_schema or extraction_prompt, and cost caps via cost_controls. Supports browser actions via actions, plus screenshot and generate_pdf; the response includes action_results, one entry per action with index, type, success, error, result (evaluate) and screenshot_url (screenshot actions).",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -859,7 +859,7 @@
     {
       "name": "alterlab_screenshot",
       "summary": "Capture a full-page PNG screenshot of any URL, including anti-bot-protected sites",
-      "description": "Use when a normal fetch returns 403/429, a bot-protection challenge page, a CAPTCHA, or an empty JavaScript shell. Capture a full-page PNG screenshot of any URL, including anti-bot-protected sites, rendered in a real headless browser. Use wait_for to wait for an element and wait_until to control load timing. Pass actions (for example dismiss_consent or evaluate) to prepare the page; the screenshot is captured after they run and action_results is returned.",
+      "description": "Capture a full-page PNG screenshot of one URL, an image rather than text content. Use when a normal fetch returns 403/429, a bot-protection challenge page, a CAPTCHA, or an empty JavaScript shell. Works on anti-bot-protected sites, rendered in a real headless browser. Use wait_for to wait for an element and wait_until to control load timing. Pass actions (for example dismiss_consent or evaluate) to prepare the page; the screenshot is captured after they run and action_results is returned.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1703,7 +1703,7 @@
     {
       "name": "alterlab_batch_scrape",
       "summary": "Scrape 2-20 URLs in parallel and get all results back in one call, no polling required",
-      "description": "Use when a normal fetch returns 403/429, a bot-protection challenge page, a CAPTCHA, or an empty JavaScript shell. Scrape 2-20 URLs in parallel and get all results back in one call, no polling required. Failed URLs report their error; successful ones return content. For 20+ URLs use alterlab_batch.",
+      "description": "Scrape 2-20 URLs in parallel and get every result back in one synchronous call, no polling required. Use when a normal fetch returns 403/429, a bot-protection challenge page, a CAPTCHA, or an empty JavaScript shell. Failed URLs report their error; successful ones return content. For 20+ URLs use alterlab_batch.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1768,7 +1768,7 @@
     {
       "name": "alterlab_batch",
       "summary": "Scrape large URL sets (20+) asynchronously with batch-ID polling",
-      "description": "Use when a normal fetch returns 403/429, a bot-protection challenge page, a CAPTCHA, or an empty JavaScript shell. Scrape large URL sets (up to 100 per call) asynchronously. Each URL can have its own mode, formats and extraction_schema. Returns a batch_id immediately; results are available from GET /api/v1/batch/{batch_id}.",
+      "description": "Start an asynchronous batch job for a large URL set (up to 100 per call) and poll for results later. Use when a normal fetch returns 403/429, a bot-protection challenge page, a CAPTCHA, or an empty JavaScript shell. Each URL can have its own mode, formats and extraction_schema. Returns a batch_id immediately; results are available from GET /api/v1/batch/{batch_id}.",
       "inputSchema": {
         "type": "object",
         "properties": {
