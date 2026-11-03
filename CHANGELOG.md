@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.11.0
+
+### Changed
+- Tool descriptions for `alterlab_scrape`, `alterlab_extract`, `alterlab_screenshot`, `alterlab_crawl`, `alterlab_search`, `alterlab_map`, `alterlab_batch_scrape`, `alterlab_batch` and `alterlab_estimate_cost` now come from the platform's shared tool source (`src/shared/tool-definitions.json`), so the npm server, the hosted server at `mcp.alterlab.io` and the agent skill present the same tool-selection text. Tools without a shared entry keep their local description.
+
+### Added
+- `src/shared/tool-definitions.json`, the shared tool source synced from AlterLab.
+
 ## 1.10.0
 
 ### Added
