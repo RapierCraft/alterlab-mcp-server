@@ -6,6 +6,7 @@ import { AlterLabClient } from "./client.js";
 import { type Config } from "./config.js";
 import { ensureAuth } from "./auth.js";
 import { toolDescription } from "./shared/descriptions.js";
+import { toolMeta } from "./shared/annotations.js";
 import { CONFIG_FILE_PATH } from "./config.js";
 import * as fs from "fs";
 import {
@@ -113,53 +114,59 @@ function createServer(config: Config): McpServer {
 
   const server = new McpServer({
     name: "alterlab",
-    version: "1.11.7",
+    version: "1.12.0",
   });
 
+  // Every tool is registered with a title and annotations (see shared/annotations.ts).
+  const register = (name: string, description: string, shape: any, cb: (params: any) => any) => {
+    const { title, annotations } = toolMeta(name);
+    server.registerTool(name, { title, description, inputSchema: shape, annotations }, cb);
+  };
+
   // Register tools
-  server.tool(
+  register(
     "alterlab_scrape",
     toolDescription("alterlab_scrape", scrapeDescription),
     scrapeSchema.shape,
     (params) => handleScrape(client, params as any),
   );
 
-  server.tool(
+  register(
     "alterlab_extract",
     toolDescription("alterlab_extract", extractDescription),
     extractSchema.shape,
     (params) => handleExtract(client, params as any),
   );
 
-  server.tool(
+  register(
     "alterlab_screenshot",
     toolDescription("alterlab_screenshot", screenshotDescription),
     screenshotSchema.shape,
     (params) => handleScreenshot(client, params as any),
   );
 
-  server.tool(
+  register(
     "alterlab_get_job",
     getJobDescription,
     getJobSchema.shape,
     (params) => handleGetJob(client, params as any),
   );
 
-  server.tool(
+  register(
     "alterlab_estimate_cost",
     toolDescription("alterlab_estimate_cost", estimateDescription),
     estimateSchema.shape,
     (params) => handleEstimate(client, params as any),
   );
 
-  server.tool(
+  register(
     "alterlab_check_balance",
     balanceDescription,
     balanceSchema.shape,
     () => handleBalance(client),
   );
 
-  server.tool(
+  register(
     "alterlab_get_usage",
     usageDescription,
     usageSchema.shape,
@@ -167,18 +174,18 @@ function createServer(config: Config): McpServer {
   );
 
   // Crawl tools
-  server.tool("alterlab_crawl", toolDescription("alterlab_crawl", crawlDescription), crawlSchema.shape, (params) =>
+  register("alterlab_crawl", toolDescription("alterlab_crawl", crawlDescription), crawlSchema.shape, (params) =>
     handleCrawl(client, params as any),
   );
 
-  server.tool(
+  register(
     "alterlab_crawl_status",
     crawlStatusDescription,
     crawlStatusSchema.shape,
     (params) => handleCrawlStatus(client, params as any),
   );
 
-  server.tool(
+  register(
     "alterlab_crawl_cancel",
     crawlCancelDescription,
     crawlCancelSchema.shape,
@@ -186,7 +193,7 @@ function createServer(config: Config): McpServer {
   );
 
   // Search tool
-  server.tool(
+  register(
     "alterlab_search",
     toolDescription("alterlab_search", searchDescription),
     searchSchema.shape,
@@ -194,23 +201,23 @@ function createServer(config: Config): McpServer {
   );
 
   // Map tool
-  server.tool("alterlab_map", toolDescription("alterlab_map", mapDescription), mapSchema.shape, (params) =>
+  register("alterlab_map", toolDescription("alterlab_map", mapDescription), mapSchema.shape, (params) =>
     handleMap(client, params as any),
   );
 
   // Batch tools
-  server.tool(
+  register(
     "alterlab_batch_scrape",
     toolDescription("alterlab_batch_scrape", simpleBatchDescription),
     simpleBatchSchema.shape,
     (params) => handleSimpleBatch(client, params as any),
   );
 
-  server.tool("alterlab_batch", toolDescription("alterlab_batch", batchDescription), batchSchema.shape, (params) =>
+  register("alterlab_batch", toolDescription("alterlab_batch", batchDescription), batchSchema.shape, (params) =>
     handleBatch(client, params as any),
   );
 
-  server.tool(
+  register(
     "alterlab_batch_status",
     batchStatusDescription,
     batchStatusSchema.shape,
@@ -218,49 +225,49 @@ function createServer(config: Config): McpServer {
   );
 
   // Session management tools
-  server.tool(
+  register(
     "alterlab_list_sessions",
     listSessionsDescription,
     listSessionsSchema.shape,
     () => handleListSessions(client),
   );
 
-  server.tool(
+  register(
     "alterlab_create_session",
     createSessionDescription,
     createSessionSchema.shape,
     (params) => handleCreateSession(client, params as any),
   );
 
-  server.tool(
+  register(
     "alterlab_get_session",
     getSessionDescription,
     getSessionSchema.shape,
     (params) => handleGetSession(client, params as any),
   );
 
-  server.tool(
+  register(
     "alterlab_update_session",
     updateSessionDescription,
     updateSessionSchema.shape,
     (params) => handleUpdateSession(client, params as any),
   );
 
-  server.tool(
+  register(
     "alterlab_refresh_session",
     refreshSessionDescription,
     refreshSessionSchema.shape,
     (params) => handleRefreshSession(client, params as any),
   );
 
-  server.tool(
+  register(
     "alterlab_validate_session",
     validateSessionDescription,
     validateSessionSchema.shape,
     (params) => handleValidateSession(client, params as any),
   );
 
-  server.tool(
+  register(
     "alterlab_delete_session",
     deleteSessionDescription,
     deleteSessionSchema.shape,
@@ -268,28 +275,28 @@ function createServer(config: Config): McpServer {
   );
 
   // Beta feature management tools
-  server.tool(
+  register(
     "alterlab_list_beta_features",
     listBetaFeaturesDescription,
     listBetaFeaturesSchema.shape,
     () => handleListBetaFeatures(client),
   );
 
-  server.tool(
+  register(
     "alterlab_list_my_beta_features",
     listMyBetaFeaturesDescription,
     listMyBetaFeaturesSchema.shape,
     () => handleListMyBetaFeatures(client),
   );
 
-  server.tool(
+  register(
     "alterlab_enable_beta_feature",
     enableBetaFeatureDescription,
     enableBetaFeatureSchema.shape,
     (params) => handleEnableBetaFeature(client, params as any),
   );
 
-  server.tool(
+  register(
     "alterlab_disable_beta_feature",
     disableBetaFeatureDescription,
     disableBetaFeatureSchema.shape,
