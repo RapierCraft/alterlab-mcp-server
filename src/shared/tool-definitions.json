@@ -1894,6 +1894,65 @@
       }
     },
     {
+      "name": "alterlab_feedback",
+      "summary": "Report friction to the AlterLab team: a block, a wrong result, or a confusing step (works without an API key)",
+      "description": "Tell AlterLab when something is hard. Call this when something blocks you, a result is wrong, or a step is confusing, slow or priced unexpectedly. Describe what you tried, what happened and what you expected. Do not include secrets, API keys, passwords or customer data; use a job_id or hostname instead of page content. Works without an API key (rate limited per IP); with a key the report is also linked privately to your organization for follow-up. Returns a cluster_key and a status_url to check progress.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "blocked",
+              "wrong_result",
+              "confusing",
+              "slow",
+              "pricing",
+              "other"
+            ],
+            "description": "Kind of friction"
+          },
+          "tried": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "What you attempted (tool, parameters, retries)"
+          },
+          "happened": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "What went wrong"
+          },
+          "expected": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "What you expected instead"
+          },
+          "job_id": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "Job the report is about"
+          },
+          "tool_name": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Tool or endpoint the report is about"
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "Target URL; only its hostname is kept"
+          }
+        },
+        "required": [
+          "category",
+          "tried",
+          "happened",
+          "expected"
+        ]
+      }
+    },
+    {
       "name": "alterlab_create_account",
       "summary": "Create an AlterLab account on behalf of your user; the human approves by email and you receive a scoped, spend-capped API key",
       "description": "Create an AlterLab account and API key for your user. Use only when no ALTERLAB_API_KEY exists yet; skip it if a key is already configured. Signup is on behalf of your user (agent signup with human approval). Nothing is created until the human approves: they get an email (and you get a verification_url and user_code to show them) describing what the agent can do. After approval you receive a scoped API key labeled with agent_name, with a default daily spend cap, revocable from the dashboard. No extra free credit is granted; the usual welcome rules apply to the human's account. If the human has not approved yet, the result contains the signup_id, verification_url and user_code; poll GET /api/v1/agent/signup/{signup_id} or call this tool again.",
