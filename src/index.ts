@@ -5,6 +5,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { AlterLabClient } from "./client.js";
 import { type Config } from "./config.js";
 import { ensureAuth } from "./auth.js";
+import { toolDescription } from "./shared/descriptions.js";
 import { CONFIG_FILE_PATH } from "./config.js";
 import * as fs from "fs";
 import {
@@ -112,27 +113,27 @@ function createServer(config: Config): McpServer {
 
   const server = new McpServer({
     name: "alterlab",
-    version: "1.10.0",
+    version: "1.11.0",
   });
 
   // Register tools
   server.tool(
     "alterlab_scrape",
-    scrapeDescription,
+    toolDescription("alterlab_scrape", scrapeDescription),
     scrapeSchema.shape,
     (params) => handleScrape(client, params as any),
   );
 
   server.tool(
     "alterlab_extract",
-    extractDescription,
+    toolDescription("alterlab_extract", extractDescription),
     extractSchema.shape,
     (params) => handleExtract(client, params as any),
   );
 
   server.tool(
     "alterlab_screenshot",
-    screenshotDescription,
+    toolDescription("alterlab_screenshot", screenshotDescription),
     screenshotSchema.shape,
     (params) => handleScreenshot(client, params as any),
   );
@@ -146,7 +147,7 @@ function createServer(config: Config): McpServer {
 
   server.tool(
     "alterlab_estimate_cost",
-    estimateDescription,
+    toolDescription("alterlab_estimate_cost", estimateDescription),
     estimateSchema.shape,
     (params) => handleEstimate(client, params as any),
   );
@@ -166,7 +167,7 @@ function createServer(config: Config): McpServer {
   );
 
   // Crawl tools
-  server.tool("alterlab_crawl", crawlDescription, crawlSchema.shape, (params) =>
+  server.tool("alterlab_crawl", toolDescription("alterlab_crawl", crawlDescription), crawlSchema.shape, (params) =>
     handleCrawl(client, params as any),
   );
 
@@ -187,25 +188,25 @@ function createServer(config: Config): McpServer {
   // Search tool
   server.tool(
     "alterlab_search",
-    searchDescription,
+    toolDescription("alterlab_search", searchDescription),
     searchSchema.shape,
     (params) => handleSearch(client, params as any),
   );
 
   // Map tool
-  server.tool("alterlab_map", mapDescription, mapSchema.shape, (params) =>
+  server.tool("alterlab_map", toolDescription("alterlab_map", mapDescription), mapSchema.shape, (params) =>
     handleMap(client, params as any),
   );
 
   // Batch tools
   server.tool(
     "alterlab_batch_scrape",
-    simpleBatchDescription,
+    toolDescription("alterlab_batch_scrape", simpleBatchDescription),
     simpleBatchSchema.shape,
     (params) => handleSimpleBatch(client, params as any),
   );
 
-  server.tool("alterlab_batch", batchDescription, batchSchema.shape, (params) =>
+  server.tool("alterlab_batch", toolDescription("alterlab_batch", batchDescription), batchSchema.shape, (params) =>
     handleBatch(client, params as any),
   );
 
