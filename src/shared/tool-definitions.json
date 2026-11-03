@@ -1915,6 +1915,53 @@
         "type": "object",
         "properties": {}
       }
+    },
+    {
+      "name": "search_alterlab",
+      "summary": "Search everything AlterLab publishes (docs, blog, guides, comparisons, changelog); free, no API key",
+      "description": "Use this to look up how to do something with AlterLab (API parameters, SDKs, MCP setup, pricing, error codes, migration from Firecrawl/ScrapingBee/Apify) or to find a guide for scraping a specific site. Searches the docs, blog, glossary, comparisons, scrape guides and changelog. Free: needs no API key and never uses credits. Returns the best matches as title, short snippet, url and markdown_url; pass a url to read_alterlab_page to read the full page as markdown.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "What you want to know, in plain words (for example: how to scrape amazon product data)."
+          },
+          "type": {
+            "type": "string",
+            "description": "Optional content type filter: docs, blog, how-to, scrape, comparison, glossary, answers, changelog or pricing. Omit to search everything."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "description": "Maximum number of results. Default: 8."
+          }
+        },
+        "required": [
+          "q"
+        ]
+      }
+    },
+    {
+      "name": "read_alterlab_page",
+      "summary": "Read one AlterLab docs, blog or guide page as markdown; free, no API key",
+      "description": "Use this after search_alterlab to read the full text of one AlterLab page as markdown, so you can follow the documented steps instead of guessing. Pass the url of a search result. Only pages on alterlab.io that search_alterlab can return are readable. Free: needs no API key and never uses credits.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "An alterlab.io page URL taken from the url field of a search_alterlab result."
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
     }
   ]
 }
