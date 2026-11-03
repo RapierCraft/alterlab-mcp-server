@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.11.3] - 2026-11-03
+
+- Sync the scrape tool schema with the AlterLab OpenAPI spec
+
 ## [1.11.2] - 2026-11-03
 
 - Sync the shared tool definitions with AlterLab
