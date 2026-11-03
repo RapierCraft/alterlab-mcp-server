@@ -280,6 +280,46 @@ export const scrapeSchema = z.object({
         "The estimated tier, cost, and confidence are prepended to the scrape result. " +
         "Useful for unfamiliar or potentially expensive sites — see cost before committing.",
     ),
+
+  // ── Auto-generated from OpenAPI spec ──
+  actions_on_error:
+    z.enum(["continue", "abort"]).optional().describe("What a failed required action (optional=false) does: \"continue\" (default) skips it like an optional one; \"abort\" skips the remaining actions and fails the request with error_code=browser_actions_aborted (refunded). Default: continue."),
+  agent_profile:
+    z.literal("agent").optional().describe("Opt-in output profile for LLM agents. 'agent' compacts the markdown format: images collapse to alt text and repeated link targets keep only their text. Default (omitted) leaves the response unchanged."),
+  block_images:
+    z.boolean().optional().describe("Skip image downloads during browser rendering to reduce proxy bandwidth. When true, the browser aborts image requests — <img> src URLs remain in the DOM so HTML and text extraction are unaffected, but image bytes are not downloaded. When false, all images are downloaded (higher bandwidth, needed for visual accuracy). When null (default), the per-domain playbook setting is used. Most domains default to blocking images (true) to save bandwidth. E-commerce domains like amazon.com default to false because their anti-bot systems monitor resource loading patterns — browsers that never request images are more likely to be flagged as bots. Note: screenshot and generate_pdf always override this to false regardless of the value passed — images are required for accurate visual output."),
+  consent:
+    z.enum(["hide", "accept", "reject"]).optional().describe("Consent overlay handling. By default overlays are hidden before screenshot/PDF capture without changing consent state. 'accept'/'reject' click the CMP's accept or reject button; 'hide' also skips the navigation-time accept click."),
+  flatten_shadow_dom:
+    z.boolean().optional().describe("Flatten Shadow DOM roots into regular DOM for extraction (free, requires render_js). Web Components with shadow roots become visible in the serialized HTML. Default: false."),
+  include_iframes:
+    z.boolean().optional().describe("Inline iframe content into the main document (free, requires render_js). Same-origin iframes are read directly; cross-origin iframes are marked but not fetched. Default: false."),
+  max_age:
+    z.number().optional().describe("Accept a stored result up to this many seconds old (0-86400). `0` always fetches fresh. A hit is billed at 50% of the price of the tier that produced the stored result and returns `cached`, `age_seconds`, `fetched_at`, `cache_tier` and the `X-Cache: HIT` header. When omitted, the API key's default applies. Aliases: `cache=true` + `cache_ttl=N` maps to `max_age=N`; `force_refresh=true` maps to `max_age=0`."),
+  max_tokens:
+    z.number().optional().describe("Token budget for the markdown format when agent_profile='agent'. The lowest-importance blocks are dropped first (headings and the first paragraph of each section last). Ignored without agent_profile."),
+  proxy_integration_id:
+    z.string().optional().describe("Specific proxy integration ID to use (requires use_own_proxy=true)"),
+  remove_cookie_banners:
+    z.boolean().optional().describe("Remove cookie consent banners from HTML before content extraction and hide consent overlays on the live page before screenshot/PDF capture (free, enabled by default) Default: true."),
+  scroll_count:
+    z.number().optional().describe("Number of scroll iterations when scroll_to_load is enabled (1-10, default 3). Default: 3."),
+  scroll_to_load:
+    z.boolean().optional().describe("Scroll page to trigger lazy-loaded content (requires render_js). Performs explicit viewport-height scrolls to load dynamic content. Adds ~2-3s latency. Default: false."),
+  section_filter:
+    z.record(z.unknown()).optional().describe("Filter options for json_v2 section tree output. Only applies when 'json_v2' is in the formats list. Controls which sections and content blocks are included in the response."),
+  session_headers:
+    z.record(z.unknown()).optional().describe("Inline auth headers (e.g. Authorization: Bearer). Merged with session headers if session_id is also resolving headers."),
+  skip_tls_verification:
+    z.boolean().optional().describe("TLS certificate verification for the target. Omit it (recommended): certificates are verified, and if the site's own certificate is invalid (expired, self-signed, wrong hostname, incomplete chain) the page is still fetched without verification. Set true to skip verification from the start. Set false to always require a valid certificate; sites with an invalid certificate then fail."),
+  sticky_session:
+    z.string().optional().describe("Customer-facing sticky-session handle. Two separate /scrape calls that pass the same sticky_session value reuse the cookies captured on the first call (see captured_cookies in the response) for the handle's TTL, and target the SAME exit IP on a best-effort basis. Note the exit IP is only guaranteed to hold for the upstream residential-session window (~10 minutes) — for longer TTLs the shared cookie jar persists but the exit IP may rotate. Enables stateful multi-request flows — e.g. request 1 loads a page, request 2 fetches the captcha/image that appeared using request 1's cookie jar (and, within ~10 min, the same IP). Requires a paid plan (growth tier or above). Alphanumeric, '-' and '_' only, max 128 chars."),
+  sticky_session_ttl:
+    z.number().optional().describe("Sticky-session lifetime in seconds (300–7200, default 1800). This governs how long the captured cookie jar bound to sticky_session is retained; after it the handle resolves to a fresh jar. The exit-IP pin is separate and shorter — it holds only for the upstream residential-session window (~10 minutes), so a TTL above that keeps the cookie jar alive while the exit IP may rotate. Ignored unless sticky_session is set."),
+  use_system_proxy:
+    z.boolean().optional().describe("Override your default proxy integration and use AlterLab's system proxy instead Default: false."),
+  wait_condition:
+    z.string().optional().describe("Wait condition for JS rendering (domcontentloaded|networkidle|load) Default: networkidle."),
 });
 
 export const scrapeDescription =
