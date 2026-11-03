@@ -113,7 +113,7 @@ function createServer(config: Config): McpServer {
 
   const server = new McpServer({
     name: "alterlab",
-    version: "1.11.1",
+    version: "1.11.2",
   });
 
   // Register tools
