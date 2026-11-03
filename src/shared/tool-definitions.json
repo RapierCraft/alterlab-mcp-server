@@ -1885,6 +1885,15 @@
       }
     },
     {
+      "name": "alterlab_pricing",
+      "summary": "Read AlterLab's public price list (no API key needed)",
+      "description": "Get AlterLab's machine-readable price list: per-tier cost, bring-your-own-proxy discount, cache-hit discount, add-ons, search and SERP prices, and the free allowance. Use when deciding whether AlterLab fits a budget, before any account exists. Free and keyless; nothing is scraped or charged.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
       "name": "alterlab_create_account",
       "summary": "Create an AlterLab account on behalf of your user; the human approves by email and you receive a scoped, spend-capped API key",
       "description": "Create an AlterLab account and API key for your user. Use only when no ALTERLAB_API_KEY exists yet; skip it if a key is already configured. Signup is on behalf of your user (agent signup with human approval). Nothing is created until the human approves: they get an email (and you get a verification_url and user_code to show them) describing what the agent can do. After approval you receive a scoped API key labeled with agent_name, with a default daily spend cap, revocable from the dashboard. No extra free credit is granted; the usual welcome rules apply to the human's account. If the human has not approved yet, the result contains the signup_id, verification_url and user_code; poll GET /api/v1/agent/signup/{signup_id} or call this tool again.",
