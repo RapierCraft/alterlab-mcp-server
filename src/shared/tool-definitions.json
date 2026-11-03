@@ -70,12 +70,12 @@
           },
           "extraction_schema": {
             "type": "object",
-            "description": "JSON schema for structured extraction. Fields matching this schema are extracted from the page. Example: { \"title\": \"string\", \"price\": \"number\" }"
+            "description": "JSON schema for structured extraction. Fields matching this schema are extracted from the page. Example: { \"title\": \"string\", \"price\": \"number\" }. LLM extraction needs your own LLM API key (OpenAI, Anthropic, OpenRouter, etc.) added in the dashboard BYOK settings; without one the request is rejected with byok_key_required and not charged."
           },
           "extraction_prompt": {
             "type": "string",
             "maxLength": 2000,
-            "description": "Natural language extraction instruction."
+            "description": "Natural language extraction instruction. LLM extraction needs your own LLM API key (OpenAI, Anthropic, OpenRouter, etc.) added in the dashboard BYOK settings; without one the request is rejected with byok_key_required and not charged."
           },
           "extraction_profile": {
             "type": "string",
@@ -772,7 +772,7 @@
     {
       "name": "alterlab_extract",
       "summary": "Extract structured data (prices, product info, custom fields) from HTML, text, or markdown you already have",
-      "description": "Extract structured data (prices, product info, contact details, custom fields) as JSON from HTML, text or markdown you already hold. Use when you have content and need specific fields. Does not fetch a URL: to fetch and extract in one step, use alterlab_scrape with extraction_schema.",
+      "description": "Extract structured data (prices, product info, contact details, custom fields) as JSON from HTML, text or markdown you already hold. Use when you have content and need specific fields. Does not fetch a URL: to fetch and extract in one step, use alterlab_scrape with extraction_schema. LLM extraction (extraction_prompt, extraction_schema) requires your own LLM API key (OpenAI, Anthropic, OpenRouter, etc.) added in the dashboard BYOK settings; without one it fails with byok_key_required.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -798,11 +798,12 @@
           },
           "extraction_schema": {
             "type": "object",
-            "description": "JSON schema for structured extraction. Fields matching this schema are extracted from the page. Example: { \"title\": \"string\", \"price\": \"number\" }"
+            "description": "JSON schema for structured extraction. Fields matching this schema are extracted from the page. Example: { \"title\": \"string\", \"price\": \"number\" }. LLM extraction needs your own LLM API key (OpenAI, Anthropic, OpenRouter, etc.) added in the dashboard BYOK settings; without one the request is rejected with byok_key_required and not charged."
           },
           "extraction_prompt": {
             "type": "string",
-            "maxLength": 2000
+            "maxLength": 2000,
+            "description": "Natural language extraction instruction. LLM extraction needs your own LLM API key (OpenAI, Anthropic, OpenRouter, etc.) added in the dashboard BYOK settings; without one the request is rejected with byok_key_required and not charged."
           },
           "extraction_model": {
             "type": "string"
@@ -1438,7 +1439,7 @@
           },
           "extraction_schema": {
             "type": "object",
-            "description": "JSON schema for structured extraction. Fields matching this schema are extracted from the page. Example: { \"title\": \"string\", \"price\": \"number\" }"
+            "description": "JSON schema for structured extraction. Fields matching this schema are extracted from the page. Example: { \"title\": \"string\", \"price\": \"number\" }. LLM extraction needs your own LLM API key (OpenAI, Anthropic, OpenRouter, etc.) added in the dashboard BYOK settings; without one the request is rejected with byok_key_required and not charged."
           },
           "extraction_profile": {
             "type": "string",
@@ -1614,7 +1615,7 @@
           },
           "extraction_schema": {
             "type": "object",
-            "description": "JSON schema for structured extraction. Fields matching this schema are extracted from the page. Example: { \"title\": \"string\", \"price\": \"number\" }"
+            "description": "JSON schema for structured extraction. Fields matching this schema are extracted from the page. Example: { \"title\": \"string\", \"price\": \"number\" }. LLM extraction needs your own LLM API key (OpenAI, Anthropic, OpenRouter, etc.) added in the dashboard BYOK settings; without one the request is rejected with byok_key_required and not charged."
           },
           "safe_search": {
             "type": "boolean"
@@ -1803,7 +1804,7 @@
                 },
                 "extraction_schema": {
                   "type": "object",
-                  "description": "JSON schema for structured extraction. Fields matching this schema are extracted from the page. Example: { \"title\": \"string\", \"price\": \"number\" }"
+                  "description": "JSON schema for structured extraction. Fields matching this schema are extracted from the page. Example: { \"title\": \"string\", \"price\": \"number\" }. LLM extraction needs your own LLM API key (OpenAI, Anthropic, OpenRouter, etc.) added in the dashboard BYOK settings; without one the request is rejected with byok_key_required and not charged."
                 },
                 "render_js": {
                   "type": "boolean"
