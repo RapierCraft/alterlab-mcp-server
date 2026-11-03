@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.12.0] - 2026-11-03
+
+- Register a title and MCP tool annotations (readOnlyHint, destructiveHint, idempotentHint, openWorldHint) on every tool; shared tools take them from the synced tool definitions
+
 ## [1.11.7] - 2026-11-03
 
 - Sync the shared tool definitions with AlterLab
