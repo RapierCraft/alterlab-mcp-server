@@ -1906,6 +1906,15 @@
           "email"
         ]
       }
+    },
+    {
+      "name": "alterlab_create_api_key",
+      "summary": "Create the AlterLab API key for this machine, if the user ticked 'Also create an API key' when approving the MCP connection",
+      "description": "Create one scoped, spend-capped API key (ALTERLAB_API_KEY) for the SDK and REST API on this machine. Works only when the user ticked \"Also create an API key for this machine\" on the OAuth approval screen, so no second approval is needed. Skip it if a key is already configured. The key is labeled with your client name, carries the same read/write permissions and daily spend cap as this connection (never billing), and is revocable from the dashboard. The plaintext is returned once: store it in the environment immediately without printing it. A repeat call returns key metadata only. If it fails with a permission error, the box was not ticked: use alterlab_create_account instead.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
     }
   ]
 }
