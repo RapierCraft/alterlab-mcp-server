@@ -2343,7 +2343,7 @@
         "openWorldHint": false
       },
       "summary": "Search everything AlterLab publishes (docs, blog, guides, comparisons, changelog); free, no API key",
-      "description": "Use this to look up how to do something with AlterLab (API parameters, SDKs, MCP setup, pricing, error codes, migration from Firecrawl/ScrapingBee/Apify) or to find a guide for scraping a specific site. Searches the docs, blog, glossary, comparisons, scrape guides and changelog. Free: needs no API key and never uses credits. Returns the best matches as title, short snippet, url and markdown_url; pass a url to read_alterlab_page to read the full page as markdown. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
+      "description": "Use this to look up how to do something with AlterLab (API parameters, SDKs, MCP setup, pricing, error codes, migration from Firecrawl/ScrapingBee/Apify) or to find a guide for scraping a specific site. Searches the docs guides and API reference by default (blog posts only when you pass type=blog); the answer field gives the first actionable step from the best guide with a link. Free: needs no API key and never uses credits. Returns the best matches as title, short snippet, url and markdown_url; pass a url to read_alterlab_page to read the full page as markdown. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2355,7 +2355,7 @@
           },
           "type": {
             "type": "string",
-            "description": "Optional content type filter: docs, blog, how-to, scrape, comparison, glossary, answers, changelog or pricing. Omit to search everything."
+            "description": "Optional comma list of content types: guide, api, blog, or docs, how-to, scrape, comparison, glossary, answers, changelog, pricing. Default: guide,api (blog is excluded unless you ask for it)."
           },
           "limit": {
             "type": "integer",
