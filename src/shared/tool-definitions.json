@@ -2141,6 +2141,87 @@
       }
     },
     {
+      "name": "alterlab_ai_visibility",
+      "title": "AI Visibility Check",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "summary": "Check whether and how a brand appears in AI answers (Google AI Overviews and AI Mode, ChatGPT, Perplexity, Gemini, Copilot)",
+      "description": "Run prompts against AI answer engines through their public, logged-out interfaces and get, per engine and run, the answer text, whether the brand is mentioned and its position, competitors mentioned, cited URLs and domains and a sentiment label, plus per-prompt mention rate, share of voice and citation share with the sample size. Answers vary run to run, so set runs_per_prompt. Billed per successful engine answer only; an engine that needs login returns engine_unavailable_logged_out and is not billed. Use action=quote (or action=check with quote_only=true) to get the price first, and set hard_cap_microcents to refuse any run quoted above it. action=check (default) runs the check; action=status and action=results read a past run by run_id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": ["check", "quote", "status", "results"],
+            "description": "check (default) runs the prompts; quote prices them without running; status and results read a run by run_id."
+          },
+          "prompts": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "minItems": 1,
+            "maxItems": 50,
+            "description": "Prompts to ask (check and quote)."
+          },
+          "brand": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Brand to look for (check and quote)."
+          },
+          "competitors": {
+            "type": "array",
+            "items": { "type": "string" },
+            "maxItems": 20,
+            "description": "Competitor names to track. Default: none."
+          },
+          "engines": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["google_ai_overview", "google_ai_mode", "chatgpt", "perplexity", "gemini", "copilot"]
+            },
+            "minItems": 1,
+            "description": "Engines to query (check and quote)."
+          },
+          "country": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 8,
+            "description": "Country code for localised answers. Default: engine default."
+          },
+          "runs_per_prompt": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5,
+            "description": "Runs per prompt and engine, 1-5. Default: 1."
+          },
+          "brand_domains": {
+            "type": "array",
+            "items": { "type": "string" },
+            "maxItems": 20,
+            "description": "Domains that count as the brand when cited. Default: none."
+          },
+          "quote_only": {
+            "type": "boolean",
+            "description": "Return the quote without running or billing. Default: false."
+          },
+          "hard_cap_microcents": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Refuse the run if the quote exceeds this many microcents. Default: no cap."
+          },
+          "run_id": {
+            "type": "string",
+            "description": "Run id from a check (status and results)."
+          }
+        }
+      }
+    },
+    {
       "name": "alterlab_feedback",
       "title": "Send Feedback",
       "annotations": {
