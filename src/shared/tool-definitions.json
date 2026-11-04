@@ -772,7 +772,7 @@
                     "type"
                   ],
                   "additionalProperties": false,
-                  "description": "Capture one file download started by the page. Provide exactly one of selector or url. The file is stored privately; action_results[i].artifact holds its metadata and GET /api/v1/artifacts/{artifact_id}/url returns a short-lived signed URL"
+                  "description": "Not yet available (beta): requests using this action are rejected with HTTP 400 action_not_available until artifact storage ships. Capture one file download started by the page. Provide exactly one of selector or url. The file is stored privately; action_results[i].artifact holds its metadata and GET /api/v1/artifacts/{artifact_id}/url returns a short-lived signed URL"
                 }
               ]
             },
@@ -1415,7 +1415,7 @@
                     "type"
                   ],
                   "additionalProperties": false,
-                  "description": "Capture one file download started by the page. Provide exactly one of selector or url. The file is stored privately; action_results[i].artifact holds its metadata and GET /api/v1/artifacts/{artifact_id}/url returns a short-lived signed URL"
+                  "description": "Not yet available (beta): requests using this action are rejected with HTTP 400 action_not_available until artifact storage ships. Capture one file download started by the page. Provide exactly one of selector or url. The file is stored privately; action_results[i].artifact holds its metadata and GET /api/v1/artifacts/{artifact_id}/url returns a short-lived signed URL"
                 }
               ]
             },
