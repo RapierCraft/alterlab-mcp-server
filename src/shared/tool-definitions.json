@@ -618,6 +618,30 @@
                     "type": {
                       "type": "string",
                       "enum": [
+                        "scroll_into_view"
+                      ]
+                    },
+                    "selector": {
+                      "type": "string",
+                      "maxLength": 500,
+                      "description": "CSS selector, or XPath when prefixed with '//' or 'xpath=' of the element to bring into view"
+                    },
+                    "block": {"type": "string", "enum": ["start", "center", "end", "nearest"], "default": "center", "description": "Vertical alignment of the element in the viewport"},
+                    "frame": {"anyOf": [{"type": "string", "maxLength": 500}, {"type": "array", "items": {"type": "string", "maxLength": 500}, "minItems": 1, "maxItems": 3}], "description": "Selector of the <iframe> that contains the target; a list targets nested frames, outermost first"}
+                  },
+                  "required": [
+                    "type",
+                    "selector"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Scroll an element into view, e.g. to reach a row of a virtualized list. Only the visible window is observed afterwards."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
                         "click_text"
                       ]
                     },
@@ -1254,6 +1278,30 @@
                   ],
                   "additionalProperties": false,
                   "description": "Move the pointer over an element, e.g. to open a hover menu."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "scroll_into_view"
+                      ]
+                    },
+                    "selector": {
+                      "type": "string",
+                      "maxLength": 500,
+                      "description": "CSS selector, or XPath when prefixed with '//' or 'xpath=' of the element to bring into view"
+                    },
+                    "block": {"type": "string", "enum": ["start", "center", "end", "nearest"], "default": "center", "description": "Vertical alignment of the element in the viewport"},
+                    "frame": {"anyOf": [{"type": "string", "maxLength": 500}, {"type": "array", "items": {"type": "string", "maxLength": 500}, "minItems": 1, "maxItems": 3}], "description": "Selector of the <iframe> that contains the target; a list targets nested frames, outermost first"}
+                  },
+                  "required": [
+                    "type",
+                    "selector"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Scroll an element into view, e.g. to reach a row of a virtualized list. Only the visible window is observed afterwards."
                 },
                 {
                   "type": "object",
@@ -1994,6 +2042,49 @@
       "inputSchema": {
         "type": "object",
         "properties": {}
+      }
+    },
+    {
+      "name": "alterlab_news",
+      "title": "Get News Headlines",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "summary": "Search AlterLab's free cached news headline feed (no API key needed)",
+      "description": "Search aggregated news headlines from curated public sources: headline, URL, source, published time, author, image, short snippet and category. Use to find what is being reported on a topic. Served from a cache that refreshes about every 15 minutes, so a call never triggers a fetch; free and keyless, no credits are spent. Returns metadata only, not article text: to read an article, call alterlab_scrape on its URL. Cite results as 'News via AlterLab'.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Text to match in headline or snippet"
+          },
+          "category": {
+            "type": "string",
+            "description": "Category, e.g. world, technology, business, science, sports, general"
+          },
+          "source": {
+            "type": "string",
+            "description": "Source id, e.g. bbc, npr, guardian-world, aljazeera"
+          },
+          "language": {
+            "type": "string",
+            "description": "Language code, e.g. en, de"
+          },
+          "since": {
+            "type": "string",
+            "description": "ISO 8601 time; only items published after it"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Max items (default 20)"
+          }
+        }
       }
     },
     {
