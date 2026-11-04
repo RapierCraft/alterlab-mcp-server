@@ -2312,6 +2312,361 @@
           "url"
         ]
       }
+    },
+    {
+      "name": "alterlab_serp",
+      "title": "Search Engine Results",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "summary": "Run a structured search-engine results query (organic results and ads) or read your SERP history",
+      "description": "Query a search engine and get structured results: organic listings, ads and related data, from Google, Bing or DuckDuckGo. Use action=search (default) to run a query, or action=history to read earlier SERP queries for your account. Prefer alterlab_search when you also want each result page scraped. Search runs spend credits at the SERP rate.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "search",
+              "history"
+            ],
+            "description": "search (default) runs a query; history lists past queries"
+          },
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Search query"
+          },
+          "search_engine": {
+            "type": "string",
+            "enum": [
+              "google",
+              "bing",
+              "duckduckgo"
+            ],
+            "description": "Search engine (default google)"
+          },
+          "device": {
+            "type": "string",
+            "enum": [
+              "desktop",
+              "mobile"
+            ],
+            "description": "Device profile (search only)"
+          },
+          "country": {
+            "type": "string",
+            "description": "Two-letter country code for localised results"
+          },
+          "city": {
+            "type": "string",
+            "description": "City for localised results (search only)"
+          },
+          "language": {
+            "type": "string",
+            "description": "Language code, e.g. en"
+          },
+          "num_results": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Organic results to request (search only)"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Results page (search only)"
+          },
+          "safe_search": {
+            "type": "boolean",
+            "description": "Enable safe search filtering (search only)"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_job",
+      "title": "Job Status",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "summary": "Check the status and result of a job, or get its per-stage timing breakdown",
+      "description": "Look up a job by id. action=status (default) returns its status and result once finished; set wait (seconds) to hold the request until the job reaches a terminal status. action=explain returns the ordered per-stage timing breakdown, useful when a job was slow or failed. Job ids come from async scrape, crawl, batch and SERP responses.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "status",
+              "explain"
+            ],
+            "description": "status (default) or explain"
+          },
+          "job_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Job id"
+          },
+          "wait": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 60,
+            "description": "status only: long-poll up to this many seconds"
+          }
+        },
+        "required": [
+          "job_id"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_balance",
+      "title": "Balance and Usage",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "summary": "Read your credit balance or your usage statistics",
+      "description": "Read account credit data. action=balance (default) returns the current credit balance in microcents (1,000,000 microcents = $1.00) with formatted values. action=usage returns usage statistics. Read-only; call it before an expensive crawl or batch to confirm there are enough credits.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "balance",
+              "usage"
+            ],
+            "description": "balance (default) or usage"
+          }
+        }
+      }
+    },
+    {
+      "name": "alterlab_monitor",
+      "title": "Page Monitors",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "summary": "Create, list or delete monitors that watch a page for changes",
+      "description": "Manage change monitors. action=create watches a URL on a cron schedule and notifies by webhook when content changes; action=list returns your monitors; action=delete removes one by monitor_id (it stops running and cannot be restored). Each check spends credits like a scrape.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "create",
+              "list",
+              "delete"
+            ],
+            "description": "create, list or delete"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "description": "create: monitor name"
+          },
+          "url": {
+            "type": "string",
+            "description": "create: URL to watch"
+          },
+          "check_interval": {
+            "type": "string",
+            "description": "create: cron expression, e.g. '0 */6 * * *' (every 6 hours)"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "create: timezone for the cron expression (default UTC)"
+          },
+          "diff_mode": {
+            "type": "string",
+            "enum": [
+              "semantic",
+              "exact",
+              "selector"
+            ],
+            "description": "create: how changes are detected"
+          },
+          "monitor_selectors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "description": "create: CSS selectors to track when diff_mode=selector"
+          },
+          "notify_on": {
+            "type": "string",
+            "enum": [
+              "change",
+              "always"
+            ],
+            "description": "create: send the webhook on change only, or on every check"
+          },
+          "webhook_url": {
+            "type": "string",
+            "description": "create: HTTPS endpoint to notify"
+          },
+          "formats": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "create: output formats to compare"
+          },
+          "monitor_id": {
+            "type": "string",
+            "description": "delete: monitor id from create or list"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Page size (default 20)"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Items to skip"
+          },
+          "active_only": {
+            "type": "boolean",
+            "description": "list: only active items"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_schedule",
+      "title": "Scrape Schedules",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "summary": "Create, list or delete recurring scrape schedules",
+      "description": "Manage recurring scrape schedules. action=create runs a scrape of one or more URLs on a cron expression; action=list returns your schedules; action=delete removes one by schedule_id (it stops triggering). Every run spends credits like a scrape; minimum intervals depend on your balance tier.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "create",
+              "list",
+              "delete"
+            ],
+            "description": "create, list or delete"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "description": "create: schedule name"
+          },
+          "urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 100,
+            "description": "create: URLs to scrape on each run"
+          },
+          "cron": {
+            "type": "string",
+            "description": "create: five-field cron expression, e.g. '0 9 * * *'"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "create: timezone for the cron expression (default UTC)"
+          },
+          "webhook_url": {
+            "type": "string",
+            "description": "create: HTTPS endpoint that receives results"
+          },
+          "formats": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "create: output formats"
+          },
+          "schedule_id": {
+            "type": "string",
+            "description": "delete: schedule id from create or list"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Page size (default 20)"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Items to skip"
+          },
+          "active_only": {
+            "type": "boolean",
+            "description": "list: only active items"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_workflow_run",
+      "title": "Run Workflow",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "summary": "Run a saved workflow and get back a run id to follow with alterlab_job or the dashboard",
+      "description": "Start an execution of a workflow you saved in the AlterLab dashboard. Optional input_data is passed to the workflow's webhook trigger node. Returns run_id, workflow_id and the initial status. The run spends credits for the steps it executes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "workflow_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Id of the saved workflow"
+          },
+          "input_data": {
+            "type": "object",
+            "description": "Optional data injected into the workflow's trigger node"
+          }
+        },
+        "required": [
+          "workflow_id"
+        ]
+      }
     }
   ]
 }
