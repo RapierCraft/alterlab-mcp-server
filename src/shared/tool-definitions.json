@@ -2088,6 +2088,59 @@
       }
     },
     {
+      "name": "alterlab_keyword_ideas",
+      "title": "Get Keyword Ideas",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "summary": "Get question and long-tail keyword ideas for a seed from autocomplete, People Also Ask and related searches",
+      "description": "Fan out a seed keyword across autocomplete (seed + a-z + who/what/how/why/best/vs), People Also Ask and related searches, and get deduplicated ideas, each with source, question flag, intent (question, commercial, navigational, informational) and a 0-1 relevance score. volume is always null: there is no search-volume data, and the score is relevance (frequency across sources and positions), not volume. Billed per successful call; set quote_only=true to get the price first without running anything. Results are cached 7 days per seed, country and language and a cache hit costs half the quote.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "seed": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "country": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 2,
+            "description": "ISO country code. Default: us."
+          },
+          "language": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 8,
+            "description": "Language code. Default: en."
+          },
+          "depth": {
+            "type": "integer",
+            "enum": [1, 2],
+            "description": "1 (default) or 2, which also expands the best ideas (up to 60 calls)."
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["autocomplete", "paa", "related"]
+            },
+            "minItems": 1,
+            "description": "Sources to use. Default: all three."
+          },
+          "quote_only": {
+            "type": "boolean",
+            "description": "Return the quote without running or billing."
+          }
+        },
+        "required": ["seed"]
+      }
+    },
+    {
       "name": "alterlab_feedback",
       "title": "Send Feedback",
       "annotations": {
