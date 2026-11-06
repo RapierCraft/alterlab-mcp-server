@@ -1663,8 +1663,8 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "summary": "Search the web and get structured SERP results, optionally scraping each result page",
-      "description": "Search the web and get structured results (URLs, titles, snippets). Use when you have a question or topic but no URL yet; follow up with alterlab_scrape to read a page, or set scrape_results=true to read every result in one call. Use domain to restrict to one site and time_range to filter by recency. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
+      "summary": "Search the web and read the results in one call: a unified, vendor-neutral result list with each page as concise markdown",
+      "description": "Search the web and read the results in one call. Returns a unified, vendor-neutral result list (URLs, titles, snippets) with each result page as concise markdown and a per-result content_status (ok, partial, blocked, timeout, dead_origin, pending; only fetched pages are billed). Use when you have a question or topic but no URL yet; for one known URL use alterlab_scrape. Set scrape_results=false for the result list only (cheapest); concise=false returns full-length content; mode trades latency for coverage. Use domain to restrict to one site and time_range to filter by recency. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1712,8 +1712,22 @@
           },
           "scrape_results": {
             "type": "boolean",
-            "description": "Also scrape each result page. Default: false.",
-            "default": false
+            "description": "Return the content of each result page (billed per fetched page). Default: true. false returns the unified result list only.",
+            "default": true
+          },
+          "concise": {
+            "type": "boolean",
+            "description": "With scrape_results=true: concise agent output, markdown with size caps. Default: true. false returns full-length content.",
+            "default": true
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "fast",
+              "standard",
+              "deep"
+            ],
+            "description": "Latency tier for page content: fast (5 s), standard (15 s), deep (60 s). Default: standard."
           },
           "formats": {
             "type": "array",
@@ -1739,6 +1753,100 @@
         "required": [
           "query"
         ]
+      }
+    },
+    {
+      "name": "alterlab_research",
+      "title": "Deep Research",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "summary": "Run a budgeted deep-research job that searches, reads sources and returns a cited answer, using your own model key",
+      "description": "Answer a hard question with a cited report or structured JSON by running a budgeted research job: it plans searches, reads many sources, follows leads and attaches a citation to every claim. Use when one search is not enough; for a quick lookup use alterlab_search. Runs on your own LLM key (BYOK); without one it returns byok_key_required and charges nothing. Set effort (lite, standard, deep, exhaustive) and max_cost_microcents to cap spend. The call waits within the tool time budget; if the job is still running it returns the job id and status, and you call again with job_id to fetch it. Returns status, cost, coverage, warnings and the result.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "description": "Research question. Required unless job_id is given."
+          },
+          "job_id": {
+            "type": "string",
+            "description": "Fetch an existing research job instead of starting one."
+          },
+          "effort": {
+            "type": "string",
+            "enum": [
+              "lite",
+              "standard",
+              "deep",
+              "exhaustive"
+            ],
+            "description": "Search and reading budget tier. Default: standard."
+          },
+          "max_cost_microcents": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Hard cap on platform spend in microcents (1,000,000 = $1.00)."
+          },
+          "max_depth": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "description": "Max follow-up rounds."
+          },
+          "max_sources": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "description": "Max sources read."
+          },
+          "output": {
+            "type": "string",
+            "enum": [
+              "json",
+              "report",
+              "both"
+            ],
+            "description": "Structured answer, markdown report with inline citations, or both. Default: json."
+          },
+          "output_schema": {
+            "type": "object",
+            "description": "JSON Schema for the structured answer; each filled field carries citations."
+          },
+          "criteria": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "maxItems": 20,
+            "description": "Rules the result must meet; each is reported as met or unmet."
+          },
+          "min_sources": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "description": "Independent sources required per field."
+          },
+          "sources": {
+            "type": "object",
+            "description": "Source controls: include/exclude domains, categories, seed_urls, only-these-URLs."
+          },
+          "provider": {
+            "type": "string",
+            "description": "BYOK provider for planning and synthesis."
+          },
+          "model": {
+            "type": "string",
+            "description": "BYOK model override."
+          }
+        }
       }
     },
     {
