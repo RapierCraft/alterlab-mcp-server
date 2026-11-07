@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.13.0] - 2026-11-07
+
+- `alterlab_search` now defaults to unified search with content (engine `auto`, `scrape_results` true, concise agent preset, standard latency tier), matching the AlterLab API default since #39130.
+- Opt out with `scrape_results: false` (unified result list only) or an explicit `engine` of duckduckgo, google, bing or yahoo (that engine's behaviour; content only when `scrape_results` is true).
+- New `concise` and `mode` parameters; search request schema snapshot refreshed.
+
 ## [1.12.11] - 2026-11-06
 
 - Sync the shared tool definitions with AlterLab
