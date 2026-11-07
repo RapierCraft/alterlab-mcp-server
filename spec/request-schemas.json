@@ -3558,16 +3558,39 @@
     "POST /api/v1/search": {
       "properties": {
         "query": {
-          "type": "string",
-          "maxLength": 500,
-          "minLength": 1
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "queries": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "minItems": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "engine": {
           "type": "string",
           "enum": [
             "duckduckgo",
             "google",
-            "bing"
+            "bing",
+            "yahoo",
+            "auto"
           ],
           "default": "duckduckgo"
         },
@@ -3600,6 +3623,75 @@
               "type": "string",
               "maxLength": 2,
               "minLength": 2
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "city": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "coordinates": {
+          "anyOf": [
+            {
+              "properties": {
+                "lat": {
+                  "type": "number",
+                  "maximum": 90,
+                  "minimum": -90
+                },
+                "lng": {
+                  "type": "number",
+                  "maximum": 180,
+                  "minimum": -180
+                },
+                "radius_km": {
+                  "type": "number",
+                  "maximum": 500,
+                  "default": 10
+                }
+              },
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "lat",
+                "lng"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "uule": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 256
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "device": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "desktop",
+                "mobile",
+                "tablet"
+              ]
             },
             {
               "type": "null"
@@ -3639,22 +3731,34 @@
           "type": "boolean",
           "default": true
         },
-        "tenant_id": {
-          "anyOf": [
-            {
-              "type": "string",
-              "maxLength": 64
-            },
-            {
-              "type": "null"
-            }
-          ]
+        "include_ai_overview": {
+          "type": "boolean",
+          "default": false
         },
-        "session_pool_id": {
+        "no_cache": {
+          "type": "boolean",
+          "default": false
+        },
+        "zero_trace": {
+          "type": "boolean",
+          "default": false
+        },
+        "output": {
+          "type": "string",
+          "enum": [
+            "json",
+            "html"
+          ],
+          "default": "json"
+        },
+        "fields": {
           "anyOf": [
             {
-              "type": "string",
-              "maxLength": 64
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "maxItems": 50
             },
             {
               "type": "null"
@@ -3687,6 +3791,45 @@
             }
           ]
         },
+        "preset": {
+          "anyOf": [
+            {
+              "type": "string",
+              "const": "agent"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max_chars_per_result": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "maximum": 1000000,
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max_total_chars": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "maximum": 5000000,
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sync": {
+          "type": "boolean",
+          "default": false
+        },
         "extraction_schema": {
           "anyOf": [
             {
@@ -3697,13 +3840,299 @@
               "type": "null"
             }
           ]
+        },
+        "wait": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "maximum": 60,
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "fast",
+                "standard",
+                "deep"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "live": {
+          "type": "boolean",
+          "default": true
+        },
+        "category": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "web",
+                "news",
+                "images",
+                "code",
+                "academic",
+                "discussions",
+                "pdf",
+                "gov",
+                "research",
+                "developer"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sources": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string",
+                "enum": [
+                  "web",
+                  "news",
+                  "images",
+                  "code",
+                  "academic",
+                  "discussions",
+                  "pdf",
+                  "gov",
+                  "research",
+                  "developer"
+                ]
+              },
+              "type": "array",
+              "maxItems": 5,
+              "minItems": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_limits": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "type": "object"
+        },
+        "freshness": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "day",
+                "week",
+                "month",
+                "year"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "date_from": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "date_to": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "temporal_bias": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "RECENT",
+                "OLD",
+                "NONE"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "include_domains": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "maxItems": 50
+        },
+        "exclude_domains": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "maxItems": 50
+        },
+        "include_keywords": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "maxItems": 20
+        },
+        "exclude_keywords": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "maxItems": 20
+        },
+        "require_terms": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "maxItems": 20
+        },
+        "exclude_terms": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "maxItems": 20
+        },
+        "promote_terms": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "maxItems": 20
+        },
+        "max_per_domain": {
+          "type": "integer",
+          "maximum": 100,
+          "minimum": 1,
+          "default": 2
+        },
+        "domain_rules": {
+          "items": {
+            "properties": {
+              "domain": {
+                "type": "string",
+                "maxLength": 253,
+                "minLength": 1
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "block",
+                  "lower",
+                  "raise",
+                  "pin"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "domain",
+              "action"
+            ]
+          },
+          "type": "array",
+          "maxItems": 50
+        },
+        "rerank_rules": {
+          "items": {
+            "properties": {
+              "pattern": {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              "field": {
+                "type": "string",
+                "enum": [
+                  "domain",
+                  "url",
+                  "title"
+                ],
+                "default": "domain"
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "boost",
+                  "demote",
+                  "drop"
+                ],
+                "default": "boost"
+              },
+              "amount": {
+                "type": "number",
+                "maximum": 100,
+                "default": 2
+              }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "pattern"
+            ]
+          },
+          "type": "array",
+          "maxItems": 50
+        },
+        "extra_snippets": {
+          "type": "boolean",
+          "default": false
+        },
+        "timeout_ms": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "maximum": 10000,
+              "minimum": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "zero_data_retention": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false,
-      "type": "object",
-      "required": [
-        "query"
-      ]
+      "type": "object"
     },
     "POST /api/v1/sessions": {
       "properties": {

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { AlterLabClient } from "../client.js";
+import type { SearchRequest } from "../types.js";
 import { type ApiError, formatErrorResult } from "../errors.js";
 import { crawlFormatEnum } from "./common.js";
 
@@ -11,11 +12,13 @@ export const searchSchema = z.object({
     .max(500)
     .describe("Search query (max 500 characters)"),
   engine: z
-    .enum(["duckduckgo", "google", "bing"])
+    .enum(["auto", "duckduckgo", "google", "bing", "yahoo"])
     .optional()
     .describe(
-      "Search engine (API default duckduckgo). duckduckgo costs $0.001/query; google and bing use " +
-        "browser rendering and cost $0.004/query.",
+      "Search engine. Default 'auto': unified vendor-neutral search with page content. Pass " +
+        "duckduckgo, google or bing to opt out and use that engine alone (result list only unless " +
+        "scrape_results=true). duckduckgo costs $0.001/query; google and bing use browser rendering " +
+        "and cost $0.004/query.",
     ),
   num_results: z
     .number()
@@ -59,10 +62,24 @@ export const searchSchema = z.object({
     .describe("Filter results by recency"),
   scrape_results: z
     .boolean()
-    .default(false)
+    .optional()
     .describe(
-      "If true, scrape each result page and include content in response. " +
-        "Each page is billed at its scraping tier cost in addition to the base search fee.",
+      "Scrape each result page and include its content. Default: true for the unified search " +
+        "(engine auto), false when an explicit engine is set. Pass false for the result list only. " +
+        "Each fetched page is billed at its scraping tier cost in addition to the base search fee.",
+    ),
+  concise: z
+    .boolean()
+    .optional()
+    .describe(
+      "With unified search content: concise agent output (markdown with size caps). Default true. " +
+        "false returns full-length content.",
+    ),
+  mode: z
+    .enum(["fast", "standard", "deep"])
+    .optional()
+    .describe(
+      "Latency tier for page content: fast (5 s), standard (15 s), deep (60 s). Default standard.",
     ),
   formats: z
     .array(crawlFormatEnum)
@@ -85,32 +102,57 @@ export const searchDescription =
   "Search the web, find information online, look up any topic, or research a subject across the internet. " +
   "Returns search results with URLs, titles, and snippets from multiple search engines. " +
   "Uses AlterLab's SERP engine with Google/Bing/DuckDuckGo multi-engine failover for reliable results. " +
-  "Costs $0.001 per search query on the default duckduckgo engine; engine='google' or 'bing' costs $0.004 per query. " +
-  "Set scrape_results=true to also scrape each result page (with anti-bot bypass) and get full content — " +
-  "each page is billed at its normal scraping tier cost. " +
+  "Explicit engine='duckduckgo' costs $0.001 per query; engine='google' or 'bing' costs $0.004 per query. " +
+  "By default (engine auto) it runs the unified search and also returns each result page as concise markdown " +
+  "(anti-bot bypass; each fetched page is billed at its normal scraping tier cost). " +
+  "Set scrape_results=false for the result list only, or pass engine duckduckgo/google/bing to opt out of unified search. " +
   "Use domain to restrict results to a specific site (equivalent to site: operator). " +
   "Use time_range to filter by recency (hour/day/week/month/year). " +
   "Safe search is on by default; pass safe_search=false to disable it.";
+
+/**
+ * Build the POST /v1/search body. Plain calls run the unified search with content
+ * (engine auto, scrape_results true, concise agent preset, standard latency tier), the
+ * API-level default since AlterLab #39130. An explicit engine, or scrape_results=false,
+ * opts out and keeps that engine's behaviour (content only when asked for).
+ */
+export function buildSearchRequest(
+  params: z.infer<typeof searchSchema>,
+): SearchRequest {
+  const engine = params.engine ?? "auto";
+  const unified = engine === "auto";
+  const scrapeResults = params.scrape_results ?? unified;
+  const request: SearchRequest = {
+    query: params.query,
+    engine,
+    num_results: params.num_results,
+    page: params.page,
+    domain: params.domain,
+    country: params.country,
+    language: params.language,
+    time_range: params.time_range,
+    scrape_results: scrapeResults,
+    formats: params.formats,
+    extraction_schema: params.extraction_schema,
+    safe_search: params.safe_search,
+  };
+  if (scrapeResults && unified) {
+    if (params.concise !== false && params.formats === undefined) {
+      request.preset = "agent";
+    }
+    request.mode = params.mode ?? "standard";
+  } else if (scrapeResults && params.mode !== undefined) {
+    request.mode = params.mode;
+  }
+  return request;
+}
 
 export async function handleSearch(
   client: AlterLabClient,
   params: z.infer<typeof searchSchema>,
 ): Promise<CallToolResult> {
   try {
-    const response = await client.search({
-      query: params.query,
-      engine: params.engine,
-      num_results: params.num_results,
-      page: params.page,
-      domain: params.domain,
-      country: params.country,
-      language: params.language,
-      time_range: params.time_range,
-      scrape_results: params.scrape_results,
-      formats: params.formats,
-      extraction_schema: params.extraction_schema,
-      safe_search: params.safe_search,
-    });
+    const response = await client.search(buildSearchRequest(params));
 
     const text = formatSearchResponse(response, params.query);
     return { content: [{ type: "text", text }] };

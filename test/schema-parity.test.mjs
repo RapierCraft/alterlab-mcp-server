@@ -307,9 +307,13 @@ const cases = [
     schema: searchSchema,
     handler: handleSearch,
     call: "search",
-    omit: {
-      tenant_id: "internal B2B routing field; not valid for API-key callers",
-      session_pool_id: "internal B2B session-pool routing field",
+    omitRest:
+      "the search tool exposes the core query, localisation, content and latency controls; " +
+      "the remaining spec fields (multi-query, location precision, output shaping, source and ranking rules) " +
+      "are advanced API options not surfaced to agents yet",
+    mustExpose: ["query", "engine", "domain", "num_results", "page", "country", "language", "time_range", "safe_search", "scrape_results", "formats", "extraction_schema", "mode"],
+    toolOnly: {
+      concise: "agent-facing switch for the API preset field: concise=false drops preset=agent to return full-length content",
     },
   },
   {
