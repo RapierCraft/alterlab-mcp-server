@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.13.1] - 2026-11-07
+
+- Sync the shared tool definitions with AlterLab
+
 ## [1.13.0] - 2026-11-07
 
 - `alterlab_search` now defaults to unified search with content (engine `auto`, `scrape_results` true, concise agent preset, standard latency tier), matching the AlterLab API default since #39130.
