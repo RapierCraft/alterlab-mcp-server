@@ -2928,6 +2928,173 @@
           "workflow_id"
         ]
       }
+    },
+    {
+      "name": "alterlab_run_create",
+      "title": "Create Run (beta)",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "summary": "Submit a multi-step plan and get one estimate before anything runs",
+      "description": "Submit a plan of scrape and search steps (beta feature) with a required max_credits budget. Returns the run id, its state and one summed estimate; nothing executes until alterlab_run_approve (or auto_approve when the estimate fits the budget). Use dry_run to validate and estimate without storing a run. The same idempotency_key with the same plan returns the original run. Requires the agent-runs beta to be enabled for the account.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "max_credits": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Hard credit budget for the whole run"
+          },
+          "steps": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "description": "One plan step: id, type (scrape or search), params (the request body of the matching endpoint), optional depends_on, for_each and idempotency_key"
+            },
+            "description": "Plan steps"
+          },
+          "auto_approve": {
+            "type": "boolean",
+            "description": "Start immediately when the estimate is within max_credits"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Validate and estimate only; store nothing"
+          },
+          "webhook_url": {
+            "type": "string",
+            "description": "Optional URL that receives run.* events"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "description": "Makes a retried create return the original run"
+          }
+        },
+        "required": [
+          "max_credits",
+          "steps"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_run_approve",
+      "title": "Approve Run (beta)",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "summary": "Approve a run so it reserves its budget and starts executing",
+      "description": "Approve a run that is awaiting approval (beta feature). The budget is reserved in one debit before any step starts; an insufficient balance returns 402 and no step runs. Optionally pass max_credits to lower the budget, or to raise it up to the run estimate. Approving an already approved run is a no-op that returns the current state. Spends credits up to the reserved budget; unused credits are refunded when the run ends.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Run id returned by alterlab_run_create"
+          },
+          "max_credits": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Optional new budget for the run"
+          }
+        },
+        "required": [
+          "run_id"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_run_stream",
+      "title": "Stream Run Events (beta)",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "summary": "Collect typed progress events for a run, resumable by sequence number",
+      "description": "Read a run's progress events in order (beta feature). Events such as step.started, step.completed, budget.warning and run.succeeded in seq order. The call returns once the run is finished and drained or the server closes the stream. Pass last_event_id from a previous call to receive only newer events. Returns events, last_event_id and truncated.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Run id returned by alterlab_run_create"
+          },
+          "last_event_id": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Return only events after this seq"
+          },
+          "max_events": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "description": "Maximum events to return (default 100)"
+          }
+        },
+        "required": [
+          "run_id"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_run_result",
+      "title": "Get Run Result (beta)",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "summary": "Fetch a run's state, spend and step summaries",
+      "description": "Get the current state of a run (beta feature): status, estimate, credits spent and a summary of each step. Poll until the state is terminal (succeeded, partial, failed, cancelled or budget_exhausted).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Run id returned by alterlab_run_create"
+          }
+        },
+        "required": [
+          "run_id"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_run_cancel",
+      "title": "Cancel Run (beta)",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "summary": "Cancel a run and refund its unused budget",
+      "description": "Stop the pending steps of a run (beta feature) and refund the unused part of the reserved budget. Steps already in flight settle first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Run id returned by alterlab_run_create"
+          }
+        },
+        "required": [
+          "run_id"
+        ]
+      }
     }
   ]
 }
