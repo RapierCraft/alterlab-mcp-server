@@ -11,7 +11,7 @@
         "openWorldHint": true
       },
       "summary": "Fetch any URL and return clean markdown, text, HTML, or JSON, with automatic website compatibility through 5-tier escalation",
-      "description": "Fetch one URL and return its content as clean markdown, text, HTML, or JSON. Use when a normal fetch returns 403/429, a bot-protection challenge page, a CAPTCHA, or an empty JavaScript shell. Website challenges and JavaScript-heavy pages are handled automatically by a 5-tier system that starts at the cheapest tier that works and escalates only when needed. Returns markdown by default, ready for LLM context. Supports GET and POST via method, structured extraction via extraction_schema or extraction_prompt, and cost caps via cost_controls. Supports browser actions via actions, plus screenshot and generate_pdf; the response includes action_results, one entry per action with index, type, success, error, result (evaluate) and screenshot_url (screenshot actions). When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
+      "description": "Get one web page as clean, LLM-ready markdown (or text, HTML, JSON) in a single call; rendering and tier escalation are handled for you. Use when you have one URL and want its content; for an image use alterlab_screenshot, for 2-20 URLs alterlab_batch_scrape, for a whole site alterlab_crawl. Cost: from $0.0002 per page, up to $0.02 on the hardest pages; it starts at the cheapest tier that works and cache hits cost half. A 403/429, challenge page or empty JavaScript shell is retried on higher tiers automatically. Supports GET and POST via method, extraction via extraction_schema or extraction_prompt, cost caps via cost_controls, and browser actions via actions plus screenshot and generate_pdf; action_results has one entry per action with index, type, success, error, result (evaluate) and screenshot_url (screenshot actions). When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -838,7 +838,7 @@
         "openWorldHint": false
       },
       "summary": "Extract structured data (prices, product info, custom fields) from HTML, text, or markdown you already have",
-      "description": "Extract structured data (prices, product info, contact details, custom fields) as JSON from HTML, text or markdown you already hold. Use when you have content and need specific fields. Does not fetch a URL: to fetch and extract in one step, use alterlab_scrape with extraction_schema. LLM extraction (extraction_prompt, extraction_schema) requires your own LLM API key (OpenAI, Anthropic, OpenRouter, etc.) added in the dashboard BYOK settings; without one it fails with byok_key_required. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
+      "description": "Turn content you already hold (HTML, text or markdown) into structured JSON fields such as prices, product info, contact details or custom fields, without fetching anything. Use when you have content and need specific fields. Does not fetch a URL: to fetch and extract in one step, use alterlab_scrape with extraction_schema. LLM extraction (extraction_prompt, extraction_schema) requires your own LLM API key (OpenAI, Anthropic, OpenRouter, etc.) added in the dashboard BYOK settings; without one it fails with byok_key_required. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -933,7 +933,7 @@
         "openWorldHint": true
       },
       "summary": "Capture a full-page PNG screenshot of any URL, including anti-bot-protected sites",
-      "description": "Capture a full-page PNG screenshot of one URL, an image rather than text content. Use when a normal fetch returns 403/429, a bot-protection challenge page, a CAPTCHA, or an empty JavaScript shell. Works on anti-bot-protected sites, rendered in a real headless browser. Use wait_for to wait for an element and wait_until to control load timing. Pass actions (for example dismiss_consent or evaluate) to prepare the page; the screenshot is captured after they run and action_results is returned. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
+      "description": "Get a full-page PNG image of one URL, rendered in a real headless browser, when you need to see the page rather than read its text. Use when layout, charts or visual proof matter; for text content use alterlab_scrape. Cost: $0.004 per screenshot (browser tier). Use wait_for to wait for an element and wait_until to control load timing. Pass actions (for example dismiss_consent or evaluate) to prepare the page; the screenshot is captured after they run and action_results is returned. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1509,7 +1509,7 @@
         "openWorldHint": true
       },
       "summary": "Crawl an entire website for RAG or indexing — discovers and scrapes every page on a domain",
-      "description": "Crawl a whole website and return the content of every page, for RAG, indexing or site-wide export. Use when you need many pages from one domain; for one URL use alterlab_scrape, for a URL list only use alterlab_map. Works on JavaScript-heavy and protected sites, with anti-bot handling on every page. Returns a crawl_id immediately; results are available from GET /api/v1/crawl/{crawl_id}. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
+      "description": "Get the content of every page on a site in one job, for RAG, indexing or site-wide export. Use when you need many pages from one domain; for one URL use alterlab_scrape, for a URL list only use alterlab_map. Cost: the alterlab_scrape rate per page crawled, from $0.0002 up to $0.02. Works on JavaScript-heavy and protected sites. Returns a crawl_id immediately; results are available from GET /api/v1/crawl/{crawl_id}. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1688,7 +1688,7 @@
         "openWorldHint": true
       },
       "summary": "Search the web and read the results in one call: a unified, vendor-neutral result list with each page as concise markdown",
-      "description": "Search the web and read the results in one call. Returns a unified, vendor-neutral result list (URLs, titles, snippets) with each result page as concise markdown and a per-result content_status (ok, partial, blocked, timeout, dead_origin, pending; only fetched pages are billed). Use when you have a question or topic but no URL yet; for one known URL use alterlab_scrape. Set scrape_results=false for the result list only (cheapest); concise=false returns full-length content; mode trades latency for coverage. Use domain to restrict to one site and time_range to filter by recency. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
+      "description": "Search the web and read the top results in one call: a vendor-neutral list of URLs, titles and snippets, with each result page as concise markdown. Use when you have a question or topic but no URL yet; for one known URL use alterlab_scrape. Cost: $0.001 per query; only fetched result pages are billed on top, and scrape_results=false returns the result list alone (cheapest). Each result has a content_status (ok, partial, blocked, timeout, dead_origin, pending). concise=false returns full-length content; mode trades latency for coverage; domain restricts to one site and time_range filters by recency. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1789,7 +1789,7 @@
         "openWorldHint": true
       },
       "summary": "Run a budgeted deep-research job that searches, reads sources and returns a cited answer, using your own model key",
-      "description": "Answer a hard question with a cited report or structured JSON by running a budgeted research job: it plans searches, reads many sources, follows leads and attaches a citation to every claim. Use when one search is not enough; for a quick lookup use alterlab_search. Runs on your own LLM key (BYOK); without one it returns byok_key_required and charges nothing. Set effort (lite, standard, deep, exhaustive) and max_cost_microcents to cap spend. The call waits within the tool time budget; if the job is still running it returns the job id and status, and you call again with job_id to fetch it. Returns status, cost, coverage, warnings and the result.",
+      "description": "Get a cited report or structured JSON for a hard question: a budgeted research job plans searches, reads many sources, follows leads and attaches a citation to every claim. Use when one search is not enough; for a quick lookup use alterlab_search. Cost: platform spend never exceeds max_cost_microcents; it runs on your own LLM key (BYOK) and without one it returns byok_key_required and charges nothing. Set effort (lite, standard, deep, exhaustive) to trade depth for spend. The call waits within the tool time budget; if the job is still running it returns the job id and status, and you call again with job_id to fetch it. Returns status, cost, coverage, warnings and the result.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1883,7 +1883,7 @@
         "openWorldHint": true
       },
       "summary": "Discover every URL on a site via sitemap parsing and link extraction — no content scraping",
-      "description": "List every URL on a site via sitemap parsing and link extraction, without fetching page content. Use before alterlab_crawl or alterlab_batch to choose pages; to read the content itself use alterlab_crawl. Works on JavaScript-heavy and protected sites. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
+      "description": "List every URL on a site via sitemap parsing and link extraction, without fetching page content, so you can scope work before reading anything. Use before alterlab_crawl or alterlab_batch to choose pages; to read the content itself use alterlab_crawl. Works on JavaScript-heavy and protected sites. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1965,7 +1965,7 @@
         "openWorldHint": true
       },
       "summary": "Scrape 2-20 URLs in parallel and get all results back in one call, no polling required",
-      "description": "Scrape 2-20 URLs in parallel and get every result back in one synchronous call, no polling required. Use when a normal fetch returns 403/429, a bot-protection challenge page, a CAPTCHA, or an empty JavaScript shell. Failed URLs report their error; successful ones return content. For 20+ URLs use alterlab_batch. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
+      "description": "Scrape 2-20 URLs in parallel and get every result back in one synchronous call, with no polling. Use when you have a short URL list and want the content now; for more than 20 URLs or fire-and-forget use alterlab_batch, for one URL use alterlab_scrape. Cost: the alterlab_scrape rate per URL, from $0.0002 up to $0.02. Failed URLs report their error; successful ones return content. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2037,7 +2037,7 @@
         "openWorldHint": true
       },
       "summary": "Scrape large URL sets (20+) asynchronously with batch-ID polling",
-      "description": "Start an asynchronous batch job for a large URL set (up to 100 per call) and poll for results later. Use when a normal fetch returns 403/429, a bot-protection challenge page, a CAPTCHA, or an empty JavaScript shell. Each URL can have its own mode, formats and extraction_schema. Returns a batch_id immediately; results are available from GET /api/v1/batch/{batch_id}. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
+      "description": "Queue up to 100 URLs as one asynchronous job and collect the results later by batch_id, so a large list never blocks your run. Use when you have more than 20 URLs or do not need results immediately; for 2-20 URLs with results now use alterlab_batch_scrape. Cost: the alterlab_scrape rate per URL, from $0.0002 up to $0.02. Each URL can have its own mode, formats and extraction_schema. Returns a batch_id immediately; results are available from GET /api/v1/batch/{batch_id}. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2118,7 +2118,7 @@
         "openWorldHint": false
       },
       "summary": "Estimate the credit cost of a scrape before running it (price list: GET /api/v1/pricing)",
-      "description": "Estimate the credit cost of scraping a URL before you run it. Use when cost matters or before a large job; no credits are charged. Returns the predicted tier, estimated cost and confidence. Full machine-readable price list: GET https://alterlab.io/api/v1/pricing (public, no auth). When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
+      "description": "Predict the credit cost of scraping a URL before you run it, for free. Use when cost matters or before a large job. Cost: free, no credits are charged. Returns the predicted tier, estimated cost and confidence. Full machine-readable price list: GET https://alterlab.io/api/v1/pricing (public, no auth). When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2608,7 +2608,7 @@
         "openWorldHint": true
       },
       "summary": "Run a structured search-engine results query (organic results and ads) or read your SERP history",
-      "description": "Query a search engine and get structured results: organic listings, ads and related data, from Google, Bing or DuckDuckGo. Use action=search (default) to run a query, or action=history to read earlier SERP queries for your account. Prefer alterlab_search when you also want each result page scraped. Search runs spend credits at the SERP rate.",
+      "description": "Get structured search-engine results (organic listings, ads and related data) from Google, Bing or DuckDuckGo, as the engine ranks them. Use action=search (default) to run a query, or action=history to read earlier SERP queries for your account; prefer alterlab_search when you also want each result page read. Cost: $0.004 per query.",
       "inputSchema": {
         "type": "object",
         "properties": {
