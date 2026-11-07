@@ -218,7 +218,7 @@ export interface CrawlCancelResponse {
 
 export interface SearchRequest {
   query: string;
-  engine?: "duckduckgo" | "google" | "bing";
+  engine?: "auto" | "duckduckgo" | "google" | "bing" | "yahoo";
   domain?: string;
   num_results?: number;
   page?: number;
@@ -229,6 +229,10 @@ export interface SearchRequest {
   scrape_results?: boolean;
   formats?: Exclude<OutputFormat, "raw">[];
   extraction_schema?: Record<string, unknown>;
+  /** Concise agent preset for result content (unified search). */
+  preset?: "agent";
+  /** Latency tier for result content. */
+  mode?: "fast" | "standard" | "deep";
 }
 
 export interface SearchResponse {
