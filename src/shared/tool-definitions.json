@@ -785,6 +785,18 @@
                 {
                   "type": "object",
                   "properties": {
+                    "type": {"type": "string", "enum": ["inspect"]},
+                    "max_elements": {"type": "integer", "minimum": 1, "maximum": 500, "default": 200, "description": "Maximum number of elements returned (1-500)"}
+                  },
+                  "required": [
+                    "type"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Return a capped map of the visible page elements; delivered as action_results[i].element_map (viewport, page size, elements with bounding box, tag, text and candidate CSS/XPath selectors)"
+                },
+                {
+                  "type": "object",
+                  "properties": {
                     "type": {"type": "string", "enum": ["download"]},
                     "selector": {"type": "string", "maxLength": 500, "description": "CSS selector, or XPath when prefixed with '//' or 'xpath=', that starts the download"},
                     "url": {"type": "string", "maxLength": 2048, "description": "http(s) URL of a download link to open in a new tab"},
@@ -1448,6 +1460,18 @@
                   ],
                   "additionalProperties": false,
                   "description": "Capture the page HTML or markdown at this step; delivered as action_results[i].snapshot_url"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {"type": "string", "enum": ["inspect"]},
+                    "max_elements": {"type": "integer", "minimum": 1, "maximum": 500, "default": 200, "description": "Maximum number of elements returned (1-500)"}
+                  },
+                  "required": [
+                    "type"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Return a capped map of the visible page elements; delivered as action_results[i].element_map (viewport, page size, elements with bounding box, tag, text and candidate CSS/XPath selectors)"
                 },
                 {
                   "type": "object",
