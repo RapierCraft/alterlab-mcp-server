@@ -2954,6 +2954,218 @@
       }
     },
     {
+      "name": "alterlab_store_search",
+      "title": "Search Data Store",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "summary": "Search the AlterLab data store of callable data products (no API key needed)",
+      "description": "Search the catalog of ready-made data products (site scrapers, pipelines, use-case APIs) that run on AlterLab's engine and bill per valid result. Returns slug, title, summary, category and version. Use alterlab_store_get for the price and success rate. Free and keyless; nothing is run or charged.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Text to match in title or summary"
+          },
+          "category": {
+            "type": "string",
+            "description": "Category filter"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Page size (default 20)"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Page offset"
+          }
+        }
+      }
+    },
+    {
+      "name": "alterlab_store_get",
+      "title": "Get Data Store Listing",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "summary": "Read a data store listing: input schema, price per 1k results and 7-day success rate",
+      "description": "Get one listing: manifest with input and output schema, price per result, and live reliability. The response includes a pricing_summary with price_per_1k_usd and the recent success_rate over the stated window (7 days), read from the listing record, so check it before buying. Free and keyless; nothing is run or charged.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Listing slug, e.g. from alterlab_store_search"
+          },
+          "version": {
+            "type": "string",
+            "description": "Pin a major version, e.g. 1"
+          }
+        },
+        "required": [
+          "slug"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_store_quote",
+      "title": "Quote Data Store Run",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "summary": "Exact price and hard cap for a listing run (never debits, no API key needed)",
+      "description": "Quote a listing run: price per valid result, markup, and the maximum cost for max_results. The maximum is a hard cap; only valid results are billed and the rest is refunded. Free and keyless; this never reserves or debits anything. To run, call alterlab_store_run.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Listing slug, e.g. from alterlab_store_search"
+          },
+          "max_results": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
+            "description": "Maximum valid results to buy (default 100)"
+          },
+          "version": {
+            "type": "string",
+            "description": "Pin a major version, e.g. 1"
+          }
+        },
+        "required": [
+          "slug"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_store_run",
+      "title": "Run Data Store Listing",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "summary": "Run a data store listing and get typed results, or a run id to poll",
+      "description": "Run a listing with input that matches its input_schema. Reserves the quoted maximum, bills only valid results and refunds the rest. With wait=true (default) it returns results, or a run id with a next_action when the run is still going. Invalid input returns field errors and reserves nothing. Errors carry stable codes such as listing_not_found, listing_degraded, spend_cap_exceeded and blocked_upstream (refunded). Needs an API key with the scrape scope; use alterlab_store_quote first to see the cost.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Listing slug, e.g. from alterlab_store_search"
+          },
+          "input": {
+            "type": "object",
+            "description": "Input matching the listing input_schema"
+          },
+          "max_results": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
+            "description": "Maximum valid results to buy (default 100)"
+          },
+          "wait": {
+            "type": "boolean",
+            "description": "Wait for results (default true); false returns a run id immediately"
+          },
+          "version": {
+            "type": "string",
+            "description": "Pin a major version, e.g. 1"
+          }
+        },
+        "required": [
+          "slug"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_listing_draft_create",
+      "title": "Create Listing Draft",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "summary": "Create a data store listing draft from a manifest (fetch, parse, filter, transform steps)",
+      "description": "Validate a listing manifest and save it as a draft you own. Steps run in order: fetch, parse, filter, dedupe, transform (sandboxed JavaScript or Python with no network access) and map_entity. Returns the draft id and manifest_hash. Invalid manifests return 422 with the field errors. Test the draft with alterlab_listing_draft_test, then publish with alterlab_listing_publish. Needs an API key with the listings:write scope.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "manifest": {
+            "type": "object",
+            "description": "Listing manifest: slug, version, title, summary, category, data_class, login_required, input_schema, output_schema, steps, pricing, test_inputs, owner"
+          }
+        },
+        "required": [
+          "manifest"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_listing_draft_test",
+      "title": "Test Listing Draft",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "summary": "Run every test input of a listing draft on live fetches",
+      "description": "Runs each test_inputs entry of the draft on live fetches and scores it. You pay the base fetch cost only, with no seller markup. Returns per-input passed/reason, valid_records and completeness, plus the manifest_hash the result applies to. Editing the draft invalidates the result. Needs an API key with the listings:write scope.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "draft_id": {
+            "type": "string",
+            "description": "Draft id from alterlab_listing_draft_create"
+          }
+        },
+        "required": [
+          "draft_id"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_listing_publish",
+      "title": "Publish Listing Draft",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "summary": "Publish a tested listing draft as a version pending review",
+      "description": "Publishes the draft as a new immutable version in pending_review. Refused with 422 test_inputs_not_passing and the per-input failure reasons unless the last test ran on this exact manifest and every test_inputs entry passed. Paid listings also need verified Stripe Connect (409 connect_not_ready). Needs an API key with the listings:write scope.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "draft_id": {
+            "type": "string",
+            "description": "Draft id from alterlab_listing_draft_create"
+          }
+        },
+        "required": [
+          "draft_id"
+        ]
+      }
+    },
+    {
       "name": "alterlab_run_create",
       "title": "Create Run (beta)",
       "annotations": {
@@ -3120,5 +3332,5 @@
         ]
       }
     }
-  ]
+]
 }
