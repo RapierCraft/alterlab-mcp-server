@@ -2786,9 +2786,17 @@
             "enum": [
               "semantic",
               "exact",
-              "selector"
+              "selector",
+              "fields"
             ],
-            "description": "create: how changes are detected"
+            "description": "create: how changes are detected; fields tracks typed values and needs monitor_fields"
+          },
+          "monitor_fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            },
+            "description": "create: when diff_mode=fields, {name: {selector|xpath|jsonld, type: number|currency|text|bool, min_change: {abs|pct}}}. Change events carry field_changes; history at GET /v1/monitors/{id}/fields/{field}/history"
           },
           "monitor_selectors": {
             "type": "array",
