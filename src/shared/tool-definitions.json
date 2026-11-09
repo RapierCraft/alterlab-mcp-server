@@ -3371,7 +3371,7 @@
         "openWorldHint": false
       },
       "summary": "Answer a question or approve or deny an action a browser task is waiting on",
-      "description": "Answer a pending request of a browser task. For a question pass answer; for an approval pass decision approve or deny. An approval applies only to the exact previewed action: the task must retry the same batch, and any change needs a new approval. Only call this with the user's own reply. Approvals and standing permissions are the user's own consent: this agent connection cannot approve them (403 approver_required). The user approves in their AlterLab dashboard, or a separate approver key holding the hands:approve scope calls this; the agent then retries the same batch.",
+      "description": "Answer a pending request of a browser task. For a question pass answer; for an approval pass decision approve or deny. An approval applies only to the exact previewed action: the task must retry the same batch, and any change needs a new approval. Only call this with the user's own reply. Approvals and standing permissions are the user's own consent: this agent connection cannot approve them (403 approver_required). The user approves in their AlterLab dashboard (or the AlterLab Connect extension, which approves through the user's own signed-in session); the agent then retries the same batch.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3791,7 +3791,7 @@
         "openWorldHint": false
       },
       "summary": "Answer a task's question or approve or deny its pending action",
-      "description": "Reply to a request a task is waiting on, using the user's own words. For a question pass answer; for an approval pass decision approve or deny. An approval covers only the exact previewed batch, so retry it unchanged with alterlab_task_act. Only a question can be answered by this agent connection: a write approval must come from the user in their AlterLab dashboard or from a separate key with the hands:approve scope (this call returns 403 approver_required otherwise). Find request ids in alterlab_task_status or alterlab_hands_pending.",
+      "description": "Reply to a request a task is waiting on, using the user's own words. For a question pass answer; for an approval pass decision approve or deny. An approval covers only the exact previewed batch, so retry it unchanged with alterlab_task_act. Only a question can be answered by this agent connection: a write approval must come from the user in their AlterLab dashboard or the AlterLab Connect extension, which approves through the user's own signed-in session (this call returns 403 approver_required otherwise). Find request ids in alterlab_task_status or alterlab_hands_pending.",
       "inputSchema": {
         "type": "object",
         "properties": {
