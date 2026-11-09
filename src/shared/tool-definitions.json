@@ -3970,7 +3970,7 @@
         "openWorldHint": false
       },
       "summary": "Pause, resume, stop or steer a running browser task",
-      "description": "Intervene in a running task on the user's behalf: pause, resume, stop, or steer with a plain-text instruction the next step must honour (for example 'skip site 3'). Requires an agent key with the hands:control scope; an agent cannot lift a pause the user set, and takeover and the kill switch are available only from the user's own dashboard session.",
+      "description": "Intervene in a running task on the user's behalf: pause, resume, stop, or steer with a plain-text instruction the next step must honour (for example 'skip site 3'). Requires the hands:control scope (request it at OAuth consent or agent signup, or create an API key with it) and works only on tasks this key or OAuth grant started; an agent cannot lift a pause the user set, and takeover and the kill switch are available only from the user's own dashboard session.",
       "inputSchema": {
         "type": "object",
         "properties": {
