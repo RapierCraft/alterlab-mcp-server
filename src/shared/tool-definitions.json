@@ -2725,7 +2725,7 @@
         "openWorldHint": true
       },
       "summary": "Read your credit balance or your usage statistics",
-      "description": "Read account credit data. action=balance (default) returns the current credit balance in microcents (1,000,000 microcents = $1.00) with formatted values. action=usage returns usage statistics. Read-only; call it before an expensive crawl or batch to confirm there are enough credits.",
+      "description": "Read account credit data. action=balance (default) returns the current credit balance in microcents (1,000,000 microcents = $1.00) with formatted values. action=usage returns usage statistics. action=limits returns this API key's budget (limit, used, remaining, reset time) and the account budget. Read-only; call it before an expensive crawl or batch to confirm there are enough credits and budget.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2733,9 +2733,10 @@
             "type": "string",
             "enum": [
               "balance",
-              "usage"
+              "usage",
+              "limits"
             ],
-            "description": "balance (default) or usage"
+            "description": "balance (default), usage or limits"
           }
         }
       }
