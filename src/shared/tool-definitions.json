@@ -163,7 +163,7 @@
           },
           "include_raw_html": {
             "type": "boolean",
-            "description": "Include raw html. Default: false.",
+            "description": "Return the fetched pre-render origin HTML as top-level raw_html. formats [\"html\"] returns post-render cleaned HTML in content.html. Default: false.",
             "default": false
           },
           "session_id": {
