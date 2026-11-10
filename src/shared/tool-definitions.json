@@ -2315,6 +2315,56 @@
       }
     },
     {
+      "name": "alterlab_geocode",
+      "title": "Geocode Address or Landmark",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "summary": "Turn an informal address or landmark description into coordinates with provenance",
+      "description": "Resolve an informal address, place name or landmark description (including distance hints like 'a school 67 m away, a university 272 m away') to coordinate candidates. Each candidate has name, address, lat, lng, a 0-1 confidence that rises when sources agree, and the source and source_url it came from. Pass near (lat/lng), city or country to bias results. Cost: priced like one search query; no charge when nothing is found.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "description": "Informal address or landmark description."
+          },
+          "near": {
+            "type": "object",
+            "properties": {
+              "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+              "lng": { "type": "number", "minimum": -180, "maximum": 180 }
+            },
+            "required": ["lat", "lng"],
+            "description": "Bias point: candidates closer to it rank higher."
+          },
+          "city": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "City or area name used to bias the search."
+          },
+          "country": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 2,
+            "description": "ISO 3166-1 alpha-2 country code."
+          },
+          "max_results": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "description": "Maximum candidates returned. Default: 5."
+          }
+        },
+        "required": ["query"]
+      }
+    },
+    {
       "name": "alterlab_ai_visibility",
       "title": "AI Visibility Check",
       "annotations": {
