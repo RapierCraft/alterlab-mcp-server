@@ -1557,6 +1557,47 @@
           "sitemap_path": {
             "type": "string"
           },
+          "list": {
+            "type": "object",
+            "description": "Paginated list crawl: fetch url_template page by page (no link following) until stop_when, max_pages, max_credits or an error stops it. Billed per page fetched; resume with POST /crawl/{id}/resume. Status returns deduplicated items and stopped_reason.",
+            "properties": {
+              "url_template": {
+                "type": "string",
+                "description": "URL containing a {page} placeholder, e.g. https://x.com/rent?page={page}"
+              },
+              "start": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "First page number. Default: 1.",
+                "default": 1
+              },
+              "max_pages": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Hard ceiling on pages fetched. Default: 50.",
+                "default": 50
+              },
+              "item_key": {
+                "type": "string",
+                "description": "Item identity: url, jsonld:@id or selector:<css>. Default: url.",
+                "default": "url"
+              },
+              "stop_when": {
+                "type": "object",
+                "properties": {
+                  "no_new_items": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Stop after this many consecutive pages with no new items. Default: 2.",
+                    "default": 2
+                  }
+                }
+              }
+            },
+            "required": [
+              "url_template"
+            ]
+          },
           "formats": {
             "type": "array",
             "items": {

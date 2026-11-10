@@ -36,7 +36,7 @@ import {
 
 // Read version from package.json at build time is complex with ESM,
 // so we hardcode it and keep in sync with package.json.
-const VERSION = "1.13.15";
+const VERSION = "1.13.16";
 const MAX_RETRIES = 2;
 
 export class AlterLabClient {

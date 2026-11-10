@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.13.16] - 2026-11-10
+
+- Sync the shared tool definitions with AlterLab
+
 ## [1.13.15] - 2026-11-10
 
 - Sync the shared tool definitions with AlterLab
