@@ -2262,6 +2262,30 @@
       }
     },
     {
+      "name": "alterlab_site_profile",
+      "title": "Get Site Profile",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "summary": "See how a domain behaves before scraping it: measured success rate, typical tier and cost, common failures (free, no API key needed)",
+      "description": "Look up what AlterLab has measured about a domain across many customers' recent unauthenticated scrapes: success_rate, typical_tier, typical_cost_microcents and typical_cost_usd, median_latency_ms, antibot_vendor, and common_failures (code, share, retryable), each with its sample size in field_samples. Use before scraping an unfamiliar site to budget credits and set expectations; it is read-only and informational, AlterLab still chooses the tier, proxy and pace for every request. A field with too few measured samples is omitted, never estimated. An unknown or unpublished domain returns known: false and the free estimate path (alterlab_estimate_cost). Free and keyless, no credits are spent, and a call never scrapes the site.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "Hostname only, e.g. example.com (no scheme, path or query)"
+          }
+        },
+        "required": [
+          "domain"
+        ]
+      }
+    },
+    {
       "name": "alterlab_keyword_ideas",
       "title": "Get Keyword Ideas",
       "annotations": {
@@ -2896,9 +2920,14 @@
               "semantic",
               "exact",
               "selector",
-              "fields"
+              "fields",
+              "items"
             ],
-            "description": "create: how changes are detected; fields tracks typed values and needs monitor_fields"
+            "description": "create: how changes are detected; fields tracks typed values and needs monitor_fields; items tracks a listing page's item set (item.added|changed|removed) and needs monitor_items"
+          },
+          "monitor_items": {
+            "type": "object",
+            "description": "create: when diff_mode=items, {item_key: 'url'|'jsonld:@id'|'selector:<css>', fields: {name: {selector|jsonld, type, min_change}}, remove_after_missing: 1-10 (default 2)}. An item is removed only after it is missing from that many consecutive completed runs"
           },
           "monitor_fields": {
             "type": "object",
