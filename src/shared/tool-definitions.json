@@ -67,13 +67,14 @@
                 "markdown",
                 "rag",
                 "raw",
-                "content"
+                "content",
+                "structured_data"
               ]
             },
             "default": [
               "markdown"
             ],
-            "description": "Output formats. 'markdown' is best for LLM consumption. Default: [\"markdown\"]."
+            "description": "Output formats. 'markdown' is best for LLM consumption. 'structured_data' returns only the page's JSON-LD (@graph and ItemList listings flattened into product/job/listing entities with position), Open Graph, Twitter card, microdata and embedded app state (__NEXT_DATA__, Apollo), at the normal tier price. Default: [\"markdown\"]."
           },
           "extraction_schema": {
             "type": "object",
@@ -2037,7 +2038,7 @@
         "openWorldHint": true
       },
       "summary": "Scrape large URL sets (20+) asynchronously with batch-ID polling",
-      "description": "Queue up to 100 URLs as one asynchronous job and collect the results later by batch_id, so a large list never blocks your run. Use when you have more than 20 URLs or do not need results immediately; for 2-20 URLs with results now use alterlab_batch_scrape. Cost: the alterlab_scrape rate per URL, from $0.0002 up to $0.02. Each URL can have its own mode, formats and extraction_schema. Returns a batch_id immediately; results are available from GET /api/v1/batch/{batch_id}. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
+      "description": "Queue up to 100 URLs as one asynchronous job and collect the results later by batch_id, so a large list never blocks your run. Use when you have more than 20 URLs or do not need results immediately; for 2-20 URLs with results now use alterlab_batch_scrape. Cost: the alterlab_scrape rate per URL, from $0.0002 up to $0.02. Each URL can have its own mode, formats and extraction_schema. Returns a batch_id immediately; results are available from GET /api/v1/batch/{batch_id}. The response lists one `jobs` entry per submitted URL in submission order, each with a job_id or a rejection (scope, reason, retry_after_seconds); `job_ids` holds the accepted subset and is not positional, so pair ids with URLs through `jobs`. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
       "inputSchema": {
         "type": "object",
         "properties": {
