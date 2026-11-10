@@ -2363,7 +2363,7 @@
         "openWorldHint": false
       },
       "summary": "Report friction or a suggestion to the AlterLab team: a block, a wrong result, a confusing step or an idea (works without an API key)",
-      "description": "Tell AlterLab when something is hard, or what would make it better. Call this when something blocks you, a result is wrong, or a step is confusing, slow or priced unexpectedly, and also to send a suggestion (category `suggestion`, ideas welcome even when nothing is broken). Describe what you tried, what happened and what you expected. Send sanitized setup or API friction automatically; ask the user first before sending suggestions or anything quoting their data or URLs. Do not include secrets, API keys, passwords or customer data; use a job_id or hostname instead of page content. Works without an API key (rate limited per IP); with a key the report also appears as a ticket in your user's AlterLab dashboard (the response carries its ticket_ref) and similar reports are grouped. Returns a cluster_key and a status_url to check progress. For billing, account or data problems that need a human, use `alterlab_support_ticket` instead. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
+      "description": "Tell AlterLab when something is hard, or what would make it better. Call this when something blocks you, a result is wrong, or a step is confusing, slow or priced unexpectedly, and also to send a suggestion (category `suggestion`, ideas welcome even when nothing is broken). Describe what you tried, what happened and what you expected. Send sanitized setup or API friction automatically; ask the user first before sending suggestions or anything quoting their data or URLs. Do not include secrets, API keys, passwords or customer data; use a job_id or hostname instead of page content. Works without an API key (rate limited per IP); with a key the report also appears as a ticket in your user's AlterLab dashboard (the response carries its ticket_ref) and similar reports are grouped. Reply has cluster_key, status_url and `filed_anonymously`; up to 10 reports via `reports`. For billing, account or data problems that need a human, use `alterlab_support_ticket` instead. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2428,14 +2428,30 @@
           "new": {
             "type": "boolean",
             "description": "File as a new report even when a close match exists"
+          },
+          "reports": {
+            "type": "array",
+            "maxItems": 10,
+            "description": "Batch: up to 10 reports in one call instead of the top-level fields. Each item takes category, tried, happened, expected and optional suggestion, job_id, tool_name, url, same_as, new. One result per report.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "category": {"type": "string", "description": "Kind of friction"},
+                "tried": {"type": "string", "maxLength": 1000},
+                "happened": {"type": "string", "minLength": 1, "maxLength": 1000},
+                "expected": {"type": "string", "maxLength": 1000},
+                "suggestion": {"type": "string", "maxLength": 1000},
+                "job_id": {"type": "string", "maxLength": 64},
+                "tool_name": {"type": "string", "maxLength": 100},
+                "url": {"type": "string", "maxLength": 2000},
+                "same_as": {"type": "string", "maxLength": 64},
+                "new": {"type": "boolean"}
+              },
+              "required": ["category", "tried", "happened", "expected"]
+            }
           }
         },
-        "required": [
-          "category",
-          "tried",
-          "happened",
-          "expected"
-        ]
+        "required": []
       }
     },
     {
