@@ -1713,6 +1713,15 @@
                 ]
               }
             }
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": false,
+            "description": "Free estimate only: returns per-item predicted tier and cost, totals in microcents and USD, predicted time and a remaining-budget check. Nothing is dispatched or charged. A budget the estimate would exceed is rejected with the non-retryable spend_limit_would_exceed."
+          },
+          "approval_id": {
+            "type": "string",
+            "description": "Approval for work above the key's approval_above_usd threshold. Such work returns status pending_approval with an approval_url and next_action; show the URL to your human, then resubmit the identical request with the approval_id once alterlab_approval reports approved."
           }
         },
         "required": [
@@ -2143,6 +2152,15 @@
           "webhook_url": {
             "type": "string",
             "format": "uri"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": false,
+            "description": "Free estimate only: returns per-item predicted tier and cost, totals in microcents and USD, predicted time and a remaining-budget check. Nothing is dispatched or charged. A budget the estimate would exceed is rejected with the non-retryable spend_limit_would_exceed."
+          },
+          "approval_id": {
+            "type": "string",
+            "description": "Approval for work above the key's approval_above_usd threshold. Such work returns status pending_approval with an approval_url and next_action; show the URL to your human, then resubmit the identical request with the approval_id once alterlab_approval reports approved."
           }
         },
         "required": [
@@ -2199,6 +2217,56 @@
         },
         "required": [
           "url"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_approval",
+      "title": "Check Spend Approval",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "summary": "Poll a pending_approval batch or crawl until your human approves it",
+      "description": "Check the status of a spend approval raised when a batch or crawl is estimated above the key's approval_above_usd threshold. Use after alterlab_batch or alterlab_crawl returned status pending_approval with an approval_id: show the approval_url to your human, poll this tool (about every 30 seconds) until status is approved, then resubmit the identical request with approval_id. Status is pending, approved, denied or consumed. An API key cannot approve its own spend. Free.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "approval_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "approval_id from the pending_approval response"
+          }
+        },
+        "required": [
+          "approval_id"
+        ]
+      }
+    },
+    {
+      "name": "alterlab_batch_resume",
+      "title": "Resume Paused Batch",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "summary": "Re-enqueue batch items paused by the paused_low_success stop",
+      "description": "Resume a batch whose remaining items were paused with status paused_low_success because one domain or detector class kept failing (the machine-readable paused_reason says which). Use after the batch status shows paused items and you want them retried; items that failed were not charged. Returns batch_id, resumed (items re-enqueued) and status. Errors: nothing_to_resume, resume_in_progress, insufficient_credits.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "batch_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "batch_id of the paused batch"
+          }
+        },
+        "required": [
+          "batch_id"
         ]
       }
     },
