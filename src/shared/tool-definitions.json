@@ -3193,7 +3193,7 @@
         "openWorldHint": true
       },
       "summary": "Run a saved workflow and get back a run id to follow with alterlab_job or the dashboard",
-      "description": "Start an execution of a workflow you saved in the AlterLab dashboard. Optional input_data is passed to the workflow's webhook trigger node. Returns run_id, workflow_id and the initial status. The run spends credits for the steps it executes.",
+      "description": "Start an execution of a workflow you saved in the AlterLab dashboard. Workflows are authored in the dashboard (or with POST /api/v1/workflows); agents cannot list or create them here, so you need an existing workflow_id. Guide: https://alterlab.io/docs/guides/workflows. Optional input_data is passed to the workflow's webhook trigger node. Returns run_id, workflow_id and the initial status. The run spends credits for the steps it executes.",
       "inputSchema": {
         "type": "object",
         "properties": {
