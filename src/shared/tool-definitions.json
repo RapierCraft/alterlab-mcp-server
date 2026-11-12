@@ -11,7 +11,7 @@
         "openWorldHint": true
       },
       "summary": "Fetch any URL and return clean markdown, text, HTML, or JSON, with automatic website compatibility through 5-tier escalation",
-      "description": "Get one web page as clean, LLM-ready markdown (or text, HTML, JSON) in a single call; rendering and tier escalation are handled for you. Use when you have one URL and want its content; for an image use alterlab_screenshot, for 2-20 URLs alterlab_batch_scrape, for a whole site alterlab_crawl. Cost: from $0.0002 per page, up to $0.02 on the hardest pages; it starts at the cheapest tier that works and cache hits cost half. A 403/429, challenge page or empty JavaScript shell is retried on higher tiers automatically. Supports GET and POST via method, extraction via extraction_schema or extraction_prompt, cost caps via cost_controls, and browser actions via actions plus screenshot and generate_pdf; action_results has one entry per action with index, type, success, error, result (evaluate) and screenshot_url (screenshot actions). When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns. A failure may carry next_action install_hands: reason, what Hands unlocks, install link, resume ref.",
+      "description": "Get one web page as clean, LLM-ready markdown (or text, HTML, JSON) in a single call; rendering and tier escalation are handled for you. Use when you have one URL and want its content; for an image use alterlab_screenshot, for 2-20 URLs alterlab_batch_scrape, for a whole site alterlab_crawl. Cost: from $0.0002 per page, up to $0.02 on the hardest pages; it starts at the cheapest tier that works and cache hits cost half. A 403/429, challenge page or empty JavaScript shell is retried on higher tiers automatically. Supports GET and POST via method, extraction via extraction_schema or extraction_prompt, cost caps via cost_controls, and browser actions via actions plus screenshot and generate_pdf; action_results has one entry per action with index, type, success, error, result (evaluate) and screenshot_url (screenshot actions). When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns. A failure may carry next_action install_hands: reason, what Hands unlocks, install link, resume ref. Max 3 parallel calls/domain; use max_credits.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -249,6 +249,7 @@
               },
               "max_tier": {
                 "type": "string",
+                "description": "Advanced; leave unset unless you know the target works at this tier. A cap below the tier a domain needs fails the request (\"this domain requires at least tier N, but your request is capped at tier M\") and is not raised for you. Use max_credits to bound spend instead.",
                 "enum": [
                   "1",
                   "2",
@@ -1709,6 +1710,7 @@
               },
               "max_tier": {
                 "type": "string",
+                "description": "Advanced; leave unset unless you know the target works at this tier. A cap below the tier a domain needs fails the request (\"this domain requires at least tier N, but your request is capped at tier M\") and is not raised for you. Use max_credits to bound spend instead.",
                 "enum": [
                   "1",
                   "2",
