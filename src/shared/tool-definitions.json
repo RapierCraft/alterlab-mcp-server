@@ -3322,7 +3322,7 @@
         "openWorldHint": true
       },
       "summary": "Run a data store listing and get typed results, or a run id to poll",
-      "description": "Run a listing with input that matches its input_schema. Reserves the quoted maximum, bills only valid results and refunds the rest. With wait=true (default) it returns results, or a run id with a next_action when the run is still going. Invalid input returns field errors and reserves nothing. Errors carry stable codes such as listing_not_found, listing_degraded, spend_cap_exceeded and blocked_upstream (refunded). Needs an API key with the scrape scope; use alterlab_store_quote first to see the cost.",
+      "description": "Run a listing with input that matches its input_schema. Reserves the quoted maximum, bills only valid results and refunds the rest. With wait=true (default) it returns results, or a run id with a next_action when the run is still going. Invalid input returns field errors and reserves nothing. Errors carry stable codes such as listing_not_found, listing_degraded, spend_cap_exceeded and blocked_upstream (the target blocked the fetch; retryable) or, when the run failed for another reason, fetch_failed, parse_failed, invalid_manifest, listing_timeout or listing_internal_error with failure_class, failed_node and retryable (only blocked_upstream and listing_timeout are retryable); failed runs are refunded. Needs an API key with the scrape scope; use alterlab_store_quote first to see the cost.",
       "inputSchema": {
         "type": "object",
         "properties": {
