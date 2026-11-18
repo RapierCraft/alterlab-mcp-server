@@ -11,7 +11,7 @@
         "openWorldHint": true
       },
       "summary": "Fetch any URL and return clean markdown, text, HTML, or JSON, with automatic website compatibility through 5-tier escalation",
-      "description": "Get one web page as clean, LLM-ready markdown (or text, HTML, JSON) in a single call; rendering and tier escalation are handled for you. Use when you have one URL and want its content; for an image use alterlab_screenshot, for 2-20 URLs alterlab_batch_scrape, for a whole site alterlab_crawl. Cost: from $0.0002 per page, up to $0.02 on the hardest pages; it starts at the cheapest tier that works and cache hits cost half. A 403/429, challenge page or empty JavaScript shell is retried on higher tiers automatically. Supports GET and POST via method, extraction via extraction_schema or extraction_prompt, cost caps via cost_controls, and browser actions via actions plus screenshot and generate_pdf; action_results has one entry per action with index, type, success, error, result (evaluate) and screenshot_url (screenshot actions). When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns. A failure may carry next_action install_hands: reason, what Hands unlocks, install link, resume ref. A result may carry content_status: js_shell (failed empty JavaScript app shell, unbilled, next_action enable_render), thin (unbilled stub from a large page, next_action enable_render) or noscript_fallback (content taken from the page's own <noscript> fallback, billed). PDFs are detected by the response, not the URL extension, and returned as text; a binary body that cannot be converted fails with error code unsupported_content_type (unbilled, detected_type, next_action fix_request). Max 3 parallel calls/domain; use max_credits.",
+      "description": "Get one web page as clean, LLM-ready markdown (or text, HTML, JSON) in a single call; rendering and tier escalation are handled for you. Use when you have one URL and want its content; for an image use alterlab_screenshot, for 2-20 URLs alterlab_batch_scrape, for a whole site alterlab_crawl. Cost: from $0.0002 per page, up to $0.02 on the hardest pages; it starts at the cheapest tier that works and cache hits cost half. A 403/429, challenge page or empty JavaScript shell is retried on higher tiers automatically. Options: method (GET/POST), extraction_schema or extraction_prompt, cost_controls, actions (action_results: one entry per action), screenshot, generate_pdf. Keep any `Source: AlterLab — <url>` attribution. A failure may carry next_action install_hands. content_status: js_shell or thin (unbilled, next_action enable_render) or noscript_fallback (page's own <noscript>, billed). PDFs are detected by the response and returned as text; an unconvertible binary body fails unbilled with unsupported_content_type (next_action fix_request). Max 3 parallel calls/domain; use max_credits.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1789,7 +1789,8 @@
             "default": 1
           },
           "domain": {
-            "type": "string"
+            "type": "string",
+            "description": "Restrict results to this site (host and its subdomains). Off-site rows are removed: a domain_filter_partial warning reports removed rows, and an empty result list carries domain_filter_not_applied. applied_filters.domain reports the outcome."
           },
           "country": {
             "type": "string",
@@ -2772,7 +2773,7 @@
         "openWorldHint": false
       },
       "summary": "Create the AlterLab API key for this machine, if the user ticked 'Also create an API key' when approving the MCP connection",
-      "description": "Create one scoped, spend-capped API key (ALTERLAB_API_KEY) for the SDK and REST API on this machine. Works only when the user ticked \"Also create an API key for this machine\" on the OAuth approval screen, so no second approval is needed. Skip it if a key is already configured. The key is labeled with your client name, carries the same read/write permissions and daily spend cap as this connection (never billing), and is revocable from the dashboard. The plaintext is returned once: store it in the environment immediately without printing it. A repeat call returns key metadata only. If it fails with a permission error, the box was not ticked: use alterlab_create_account instead. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
+      "description": "Create one scoped, spend-capped API key (ALTERLAB_API_KEY) for the SDK and REST API on this machine. Works only when the user ticked \"Also create an API key for this machine\" on the OAuth approval screen, so no second approval is needed. Skip it if a key is already configured. The key is labeled with your client name, carries the same read/write permissions and daily spend cap as this connection (never billing), and is revocable from the dashboard. The plaintext is returned once: store it in the environment immediately without printing it. A repeat call returns key metadata only. Every response includes limits (rpm_write, rpm_read, concurrency, crawl_slots) and limits_url (GET /api/v1/usage/limits); size parallel requests to limits.concurrency. If it fails with a permission error, the box was not ticked: use alterlab_create_account instead. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -2966,7 +2967,7 @@
         "openWorldHint": true
       },
       "summary": "Read your credit balance or your usage statistics",
-      "description": "Read account credit data. action=balance (default) returns the current credit balance in microcents (1,000,000 microcents = $1.00) with formatted values. action=usage returns usage statistics. action=limits returns this API key's budget (limit, used, remaining, reset time) and the account budget. action=usage_by_tag returns spend and request counts per request tag (pass tag for one tag, with its cap; since bounds the window); failed and refunded requests are excluded. Read-only; call it before an expensive crawl or batch to confirm there are enough credits and budget.",
+      "description": "Read account credit data. action=balance (default) returns the current credit balance in microcents (1,000,000 microcents = $1.00) with formatted values. action=usage returns usage statistics. action=limits returns this API key's budget (limit, used, remaining, reset time) and the account budget. action=rate_limits returns the account's enforced limits from GET /api/v1/usage/limits (rpm_write, rpm_read, concurrency, crawl_slots, browser_slots, recent 429s); size parallel requests to concurrency. action=usage_by_tag returns spend and request counts per request tag (pass tag for one tag, with its cap; since bounds the window); failed and refunded requests are excluded. Read-only; call it before an expensive crawl or batch to confirm there are enough credits and budget.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2976,9 +2977,10 @@
               "balance",
               "usage",
               "limits",
+              "rate_limits",
               "usage_by_tag"
             ],
-            "description": "balance (default), usage, limits or usage_by_tag"
+            "description": "balance (default), usage, limits, rate_limits or usage_by_tag"
           },
           "tag": {
             "type": "string",
@@ -3228,7 +3230,7 @@
         "openWorldHint": false
       },
       "summary": "Search the AlterLab data store of callable data products (no API key needed)",
-      "description": "Search the catalog of ready-made data products (site scrapers, pipelines, use-case APIs) that run on AlterLab's engine and bill per valid result. Returns slug, title, summary, category and version. Use alterlab_store_get for the price and success rate. Free and keyless; nothing is run or charged.",
+      "description": "Search the catalog of ready-made data products (site scrapers, pipelines, use-case APIs) that run on AlterLab's engine and bill per valid result. Returns slug, title, summary, category, version and health (health_state: healthy, degraded, unverified or failing; success_rate_7d, sample_size, last_success_at). unverified means too few measured runs, not healthy. Use alterlab_store_get for the price and success rate. Free and keyless; nothing is run or charged.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3264,7 +3266,7 @@
         "openWorldHint": false
       },
       "summary": "Read a data store listing: input schema, price per 1k results and 7-day success rate",
-      "description": "Get one listing: manifest with input and output schema, price per result, and live reliability. The response includes a pricing_summary with price_per_1k_usd and the recent success_rate over the stated window (7 days), read from the listing record, so check it before buying. Free and keyless; nothing is run or charged.",
+      "description": "Get one listing: manifest with input and output schema, price per result, and live reliability. The response includes a pricing_summary with price_per_1k_usd and the recent success_rate over the stated window (7 days), read from the listing record, and a health block (health_state: healthy, degraded, unverified or failing; success_rate_7d, sample_size, last_success_at), so check it before buying. unverified means too few measured runs, not healthy. Free and keyless; nothing is run or charged.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3292,7 +3294,7 @@
         "openWorldHint": false
       },
       "summary": "Exact price and hard cap for a listing run (never debits, no API key needed)",
-      "description": "Quote a listing run: price per valid result, markup, and the maximum cost for max_results. The maximum is a hard cap; only valid results are billed and the rest is refunded. Free and keyless; this never reserves or debits anything. To run, call alterlab_store_run.",
+      "description": "Quote a listing run: price per valid result, markup, and the maximum cost for max_results. The maximum is a hard cap; only valid results are billed and the rest is refunded. Free and keyless; this never reserves or debits anything. The quote carries health_state (healthy, degraded, unverified or failing) with success_rate_7d, sample_size and last_success_at; for a degraded or failing listing next_action says listing_degraded and alterlab_store_run needs accept_degraded=true. To run, call alterlab_store_run.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3326,7 +3328,7 @@
         "openWorldHint": true
       },
       "summary": "Run a data store listing and get typed results, or a run id to poll",
-      "description": "Run a listing with input that matches its input_schema. Reserves the quoted maximum, bills only valid results and refunds the rest. With wait=true (default) it returns results, or a run id with a next_action when the run is still going. Invalid input returns field errors and reserves nothing. Errors carry stable codes such as listing_not_found, listing_degraded, spend_cap_exceeded and blocked_upstream (the target blocked the fetch; retryable) or, when the run failed for another reason, fetch_failed, parse_failed, invalid_manifest, listing_timeout or listing_internal_error with failure_class, failed_node and retryable (only blocked_upstream and listing_timeout are retryable); failed runs are refunded. Needs an API key with the scrape scope; use alterlab_store_quote first to see the cost.",
+      "description": "Run a listing with input that matches its input_schema. Reserves the quoted maximum, bills only valid results and refunds the rest. With wait=true (default) it returns results, or a run id with a next_action when the run is still going. Invalid input returns field errors and reserves nothing. Errors carry stable codes such as listing_not_found, listing_degraded, spend_cap_exceeded and blocked_upstream (the target blocked the fetch; retryable) or, when the run failed for another reason, fetch_failed, parse_failed, invalid_manifest, listing_timeout or listing_internal_error with failure_class, failed_node and retryable (only blocked_upstream and listing_timeout are retryable); failed runs are refunded. A degraded or failing listing returns listing_degraded unless accept_degraded is true (zero-result runs are still refunded). Needs an API key with the scrape scope; use alterlab_store_quote first to see the cost.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3351,6 +3353,10 @@
           "version": {
             "type": "string",
             "description": "Pin a major version, e.g. 1"
+          },
+          "accept_degraded": {
+            "type": "boolean",
+            "description": "Run a degraded or failing listing anyway (default false); see health_state from alterlab_store_quote"
           }
         },
         "required": [
