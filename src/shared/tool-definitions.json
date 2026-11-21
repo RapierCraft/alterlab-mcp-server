@@ -77,13 +77,14 @@
                 "rag",
                 "raw",
                 "content",
-                "structured_data"
+                "structured_data",
+                "images"
               ]
             },
             "default": [
               "markdown"
             ],
-            "description": "Output formats. 'markdown' is best for LLM consumption. 'structured_data' returns only the page's JSON-LD (@graph and ItemList listings flattened into product/job/listing entities with position), Open Graph, Twitter card, microdata and embedded app state (__NEXT_DATA__, Apollo), at the normal tier price. Default: [\"markdown\"]."
+            "description": "Output formats. 'markdown' is best for LLM consumption. 'structured_data' returns only the page's JSON-LD (@graph and ItemList listings flattened into product/job/listing entities with position), Open Graph, Twitter card, microdata and embedded app state (__NEXT_DATA__, Apollo), at the normal tier price. 'images' returns the page subject's gallery (main content plus JSON-LD image and og:image; navigation, footer, ads and related/similar carousels excluded; largest size variant kept, with variants, width, height and alt on each). Default: [\"markdown\"]."
           },
           "extraction_schema": {
             "type": "object",
@@ -2381,7 +2382,7 @@
         "openWorldHint": false
       },
       "summary": "See how a domain behaves before scraping it: measured success rate, typical tier and cost, common failures (free, no API key needed)",
-      "description": "Look up what AlterLab has measured about a domain across many customers' recent unauthenticated scrapes: success_rate, typical_tier, typical_cost_microcents and typical_cost_usd, median_latency_ms, antibot_vendor, and common_failures (code, share, retryable), each with its sample size in field_samples. Use before scraping an unfamiliar site to budget credits and set expectations; it is read-only and informational, AlterLab still chooses the tier, proxy and pace for every request. A field with too few measured samples is omitted, never estimated. An unknown or unpublished domain returns known: false and the free estimate path (alterlab_estimate_cost). Free and keyless, no credits are spent, and a call never scrapes the site.",
+      "description": "Look up what AlterLab has measured about a domain; a layer or field with too few samples is omitted, never estimated. Public: success_rate, typical_tier, typical cost, median_latency_ms, antibot_vendor and common_failures over many customers' unauthenticated scrapes, with field_samples. platform: vendor_family, challenge_class and recommended_mode (auto or js) across all traffic, gated on request volume only, no customer data. own (signed-in sessions only): your organisation's last 30 days on the host: by_tier and by_mode success, cheapest_successful_tier, median cost and latency, common_failures, last_success_at. known is true when any layer has data; next_action suggests the measured cheapest mode and tier. Use before scraping a site to budget credits and skip failed probes; it is informational, AlterLab still chooses tier, proxy and pace. An unknown domain returns known: false and the free estimate path (alterlab_estimate_cost). Free, and a call never scrapes the site.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2589,7 +2590,7 @@
         "openWorldHint": false
       },
       "summary": "Report friction or a suggestion to the AlterLab team: a block, a wrong result, a confusing step or an idea (works without an API key)",
-      "description": "Tell AlterLab when something is hard, or what would make it better. Call this when something blocks you, a result is wrong, or a step is confusing, slow or priced unexpectedly, and also to send a suggestion (category `suggestion`, ideas welcome even when nothing is broken). Describe what you tried, what happened and what you expected. Send sanitized setup or API friction automatically; ask the user first before sending suggestions or anything quoting their data or URLs. Do not include secrets, API keys, passwords or customer data; use a job_id or hostname instead of page content. Works without an API key (rate limited per IP); with a key the report also appears as a ticket in your user's AlterLab dashboard (the response carries its ticket_ref) and similar reports are grouped. Reply has cluster_key, status_url and `filed_anonymously`; up to 10 reports via `reports`. For billing, account or data problems that need a human, use `alterlab_support_ticket` instead. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
+      "description": "Tell AlterLab when something is hard, or what would make it better. Call this when something blocks you, a result is wrong, or a step is confusing, slow or priced unexpectedly, and also to send a suggestion (category `suggestion`, even when nothing is broken). Say what you tried, got and expected. Send sanitized setup or API friction automatically; ask the user first before sending suggestions or anything quoting their data. Do not include secrets, passwords or customer data; use a job_id or hostname instead. Works without an API key (rate limited per IP); with a key it also becomes a ticket in your user's dashboard (ticket_ref in the response) and similar reports are grouped. Use category `coverage` for a target AlterLab could not retrieve. Reply has cluster_key, status_url (GET with the same key for `ticket_status`), `filed_anonymously` and `warnings`. Up to 10 reports via `reports`. For billing or account problems needing a human, use `alterlab_support_ticket` instead. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2601,10 +2602,11 @@
               "confusing",
               "slow",
               "pricing",
+              "coverage",
               "suggestion",
               "other"
             ],
-            "description": "Kind of friction"
+            "description": "Kind of friction: blocked, wrong_result, confusing, slow, pricing, coverage (a site or target AlterLab could not retrieve), suggestion or other"
           },
           "tried": {
             "type": "string",
