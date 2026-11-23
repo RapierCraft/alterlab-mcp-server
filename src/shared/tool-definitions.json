@@ -2459,7 +2459,7 @@
         "openWorldHint": true
       },
       "summary": "Turn an informal address or landmark description into coordinates with provenance",
-      "description": "Resolve an informal address, place name or landmark description (including distance hints like 'a school 67 m away, a university 272 m away') to coordinate candidates. Each candidate has name, address, lat, lng, a 0-1 confidence that rises when sources agree, and the source and source_url it came from. Pass near (lat/lng), city or country to bias results. Cost: priced like one search query; no charge when nothing is found.",
+      "description": "Resolve an informal address, place name or landmark description (including distance hints like 'a school 67 m away, a university 272 m away') to coordinate candidates. Each candidate has name, address, lat, lng, a 0-1 confidence that rises when sources agree, and the source and source_url it came from. Pass near (lat/lng), city or country to bias results. Cost: priced like one search query; no charge when nothing is found. Available when geocoding is enabled on the deployment; otherwise the API returns 503 geocode_not_enabled with no charge.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2745,7 +2745,7 @@
         "openWorldHint": false
       },
       "summary": "Create an AlterLab account on behalf of your user; the human approves by email and you receive a scoped, spend-capped API key",
-      "description": "Create an AlterLab account and API key for your user. Use only when no ALTERLAB_API_KEY exists yet; skip it if a key is already configured. Signup is on behalf of your user (agent signup with human approval). Nothing is created until the human approves: they get an email (and you get a verification_url and user_code to show them) describing what the agent can do. After approval you receive a scoped API key labeled with agent_name, with a default daily spend cap, revocable from the dashboard. No extra free credit is granted; the usual welcome rules apply to the human's account. If the human has not approved yet, the result contains the signup_id, verification_url and user_code; poll GET /api/v1/agent/signup/{signup_id} or call this tool again. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
+      "description": "Create an AlterLab account and API key for your user. Use only when no ALTERLAB_API_KEY exists yet; skip it if a key is already configured. Signup is on behalf of your user (agent signup with human approval). Nothing is created until the human approves; their email describes what the agent can do. After approval you receive a scoped API key labeled with agent_name, with a default daily spend cap, revocable from the dashboard. No extra free credit is granted; the usual welcome rules apply to the human's account. The first call returns user_message (link and bold code, ready to print); nothing else happens until you show it. Your very next message to the user must contain the link and the bold code. Do not start polling, and do not run any other tool, until you have sent it. Then call this tool again with signup_id to wait for approval. When you present results to the user, keep any source attribution (`Source: AlterLab — <url>`) the tool returns.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2758,11 +2758,13 @@
             "type": "string",
             "default": "MCP client",
             "description": "Name of this agent, shown to the human and used to label the API key. Default: MCP client."
+          },
+          "signup_id": {
+            "type": "string",
+            "description": "From the first call; waits for approval instead of starting a new signup."
           }
         },
-        "required": [
-          "email"
-        ]
+        "required": []
       }
     },
     {
