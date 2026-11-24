@@ -114,7 +114,7 @@ function createServer(config: Config): McpServer {
 
   const server = new McpServer({
     name: "alterlab",
-    version: "1.13.32",
+    version: "1.13.33",
   });
 
   // Every tool is registered with a title and annotations (see shared/annotations.ts).
