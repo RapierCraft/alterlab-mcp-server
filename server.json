@@ -3,6 +3,7 @@
   "name": "io.alterlab/mcp-server",
   "version": "1.13.33",
   "description": "Web scraping MCP server — scrape, extract structured data, screenshot any site with anti-bot bypass.",
+  "websiteUrl": "https://alterlab.io/?utm_source=mcp-registry&utm_medium=package&utm_campaign=ecosystem",
   "repository": {
     "url": "https://github.com/RapierCraft/alterlab-mcp-server",
     "source": "github"
